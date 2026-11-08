@@ -175,3 +175,10 @@ input.txt:focus, textarea.note:focus { outline: none; border-color: var(--brand)
 .progress-list { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; font-size: 15px; }
 .progress-list .ok { color: var(--ok); font-weight: 800; }
 .progress-list .no { color: #a0a8b0; }
+
+/* 생각 열기 — 동물 그림 + 이름표(레이블) */
+.label-row { display: flex; gap: 14px; margin: 4px 0 6px; }
+.label-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.label-ico { font-size: 34px; line-height: 1.1; }
+.label-tag { font-size: 14px; font-weight: 800; padding: 1px 9px; border-radius: 999px; background: #e2f4ee; color: var(--brand); white-space: nowrap; }
+.label-tag.none { background: #eef0f2; color: #8a96a2; }
