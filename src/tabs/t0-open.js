@@ -219,7 +219,8 @@ function 사례카드(el, 수명, 도구) {
     // 고를 낱말: 쓸모 있는 속성 + 함정 을 섞는다 (늘 같은 차례)
     const 낱말 = [...c.속성, ...c.함정].sort((a, b) => (a.length * 7 + a.charCodeAt(0)) % 5 - (b.length * 7 + b.charCodeAt(0)) % 5);
     const 고른 = new Set(저장.고른[i] || []);
-    const 겉 = h('div', { class: 'flip' + (저장.뒤집음[i] ? ' on' : ''), style: { height: '300px' } });
+    // 높이를 박지 않고 남은 자리를 채운다(아래 줄의 flex:1) — 300px 로 박았더니 둥근 글꼴로 바꾼 뒤 내용이 331px 이 되어 단추가 넘쳤다
+    const 겉 = h('div', { class: 'flip' + (저장.뒤집음[i] ? ' on' : '') });
     const 칩들 = h('div', { class: 'row', style: { gap: '6px' } });
     const 결과 = h('div', { class: 'row', style: { gap: '6px' } });
     const 칩그리기 = () => {
@@ -236,8 +237,9 @@ function 사례카드(el, 수명, 도구) {
     칩그리기();
     겉.append(h('div', { class: 'flip-in' },
       h('div', { class: 'flip-face' },
-        h('div', { style: { fontSize: '44px' } }, c.그림),
-        h('h3', null, c.이름),
+        // 그림을 제목 옆에 두어 세로 자리를 아낀다 — 낱말 칩이 두세 줄로 늘어나도 단추가 카드 밖으로 밀려나지 않게
+        h('h3', { style: { margin: 0, display: 'flex', alignItems: 'center', gap: '8px' } },
+          h('span', { style: { fontSize: '34px', lineHeight: 1 } }, c.그림), c.이름),
         h('p', { class: 'lead' }, '비슷한 것끼리 묶으려면 어떤 데이터가 필요할까? 골라 보세요.'),
         칩들,
         h('button', {
@@ -245,17 +247,19 @@ function 사례카드(el, 수명, 도구) {
           onClick: () => { 저장.뒤집음[i] = true; 저장하기(); 칩그리기(); 겉.classList.add('on'); 다했나(); },
         }, '뒤집어 확인하기 ↻')),
       h('div', { class: 'flip-face flip-back' },
-        h('h3', null, c.그림 + ' ' + c.이름),
+        // 「앞면 보기」를 제목 줄에 붙여 둔다 — 낱말을 다 고르면 결과 칩이 늘어나 맨 아래 단추가 넘쳤다
+        h('div', { class: 'row', style: { justifyContent: 'space-between', flexWrap: 'nowrap' } },
+          h('h3', { style: { margin: 0 } }, c.그림 + ' ' + c.이름),
+          h('button', { class: 'btn sm', onClick: () => 겉.classList.remove('on') }, '앞면 보기')),
         h('p', { style: { margin: 0, fontSize: '15.5px' } }, c.설명),
         h('div', { class: 'muted' }, '✔ 고른 것 · ＋ 놓친 것 · ✖ 묶는 데 쓸모없는 것'),
-        결과,
-        h('button', { class: 'btn sm', style: { marginTop: 'auto' }, onClick: () => 겉.classList.remove('on') }, '앞면 보기'))));
+        결과)));
     return 겉;
   });
 
   el.append(h('div', { class: 'col grow' },
     h('h2', null, '군집 분석은 어디에 쓸까?'),
-    h('div', { class: 'row', style: { alignItems: 'stretch', gap: '14px' } }, 카드들),
+    h('div', { class: 'row', style: { alignItems: 'stretch', gap: '14px', flex: 1, minHeight: '280px', flexWrap: 'nowrap' } }, 카드들),
     h('div', { class: 'panel col' },
       h('b', null, '🌱 생물 군집처럼, 우리 사회에서 「군집」을 이룬 것에는 어떤 것이 있을까요?'),
       h('textarea', {
