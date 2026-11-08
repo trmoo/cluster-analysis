@@ -1,0 +1,8 @@
+node_modules/
+dist/
+*.log
+# 교안·교과서 원본은 저작권상 저장소에 넣지 않는다
+*.pdf
+# 개발 기록은 로컬에만 둔다
+CLAUDE.md
+.claude/

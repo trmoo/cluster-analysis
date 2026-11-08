@@ -1,0 +1,24 @@
+{
+  "name": "cluster-analysis",
+  "version": "1.0.0",
+  "description": "군집 분석 실험실 — 「데이터 과학」 군집 분석 모델의 개념을 시뮬레이션으로 배우는 앱",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "vite",
+    "dev": "vite",
+    "build": "vite build && node tools/check-dist.mjs",
+    "preview": "vite preview",
+    "test": "node test/run.mjs",
+    "check:syntax": "node tools/check-syntax.mjs"
+  },
+  "devDependencies": {
+    "vite": "^8.2.2",
+    "vite-plugin-singlefile": "^2.3.3"
+  },
+  "dependencies": {
+    "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.1"
+  }
+}
