@@ -33,6 +33,9 @@ PDF 내려받기를 위해 아래 라이브러리를 빌드 결과에 함께 묶
 * html2canvas — © Niklas von Hertzen, MIT License
 * jsPDF — © James Hall, yWorks GmbH 외, MIT License
 
+글꼴 「나눔스퀘어라운드」(© NAVER Corporation)를 앱 안에 함께 묶었습니다. 이 글꼴은
+SIL 오픈 폰트 라이선스(OFL 1.1)를 따르며, 위 「모든 권리 보유」는 글꼴에는 해당하지 않습니다.
+
 
 ── 개인정보 ──────────────────────────────────────────────────────
 

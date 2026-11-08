@@ -244,7 +244,7 @@ function 쪽6() {
 }
 
 const PDF모양 = `
-.p-wrap{position:fixed;left:-12000px;top:0;width:794px;font-family:'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo',sans-serif;color:#1f2a37}
+.p-wrap{position:fixed;left:-12000px;top:0;width:794px;font-family:'NanumSquareRound','Malgun Gothic','맑은 고딕','Apple SD Gothic Neo',sans-serif;color:#1f2a37}
 .p-page{width:794px;height:1123px;background:#fff;display:flex;flex-direction:column;box-sizing:border-box}
 .p-head{display:flex;justify-content:space-between;align-items:center;padding:16px 40px;background:#1f6f5c;color:#fff;font-size:13px}
 .p-head b{font-size:16px}
@@ -260,7 +260,7 @@ const PDF모양 = `
 .p-row{display:flex;gap:16px;align-items:flex-start}.p-col{flex:1;min-width:0}
 .p-note{color:#5b6876;font-size:12.5px}
 .p-none{background:#f4f4f4;border:1px dashed #bbb;border-radius:8px;padding:8px 12px;color:#888;margin:4px 0}
-.p-formula{font-family:'Cambria Math','Times New Roman',serif;font-size:18px;background:#f3f6f8;border-radius:8px;padding:6px 10px;text-align:center;margin:4px 0}
+.p-formula{font-family:'Cambria Math','Times New Roman','NanumSquareRound',serif;font-size:18px;background:#f3f6f8;border-radius:8px;padding:6px 10px;text-align:center;margin:4px 0}
 .p-grid2{display:grid;grid-template-columns:1fr 1fr;gap:3px 18px;font-size:13px}
 .p-ok{color:#1e8e4e;font-weight:700}.p-no{color:#a0a8b0}
 .p-tip{margin-top:16px;background:#fff6d6;border:1px solid #f0dd9a;border-radius:8px;padding:8px 12px}
