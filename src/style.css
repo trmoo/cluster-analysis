@@ -169,6 +169,13 @@ input.txt:focus, textarea.note:focus { outline: none; border-color: var(--brand)
 .blank.sel { background: #fff1c9; }
 .blank.ok { color: var(--ok); border-color: var(--ok); }
 .blank.bad { color: var(--bad); border-color: var(--bad); }
+/* 글로 적는 빈칸(활동지 꼴) — 칸 너비는 답 길이에 맞춰 style 로 준다 */
+input.fill { border: none; border-bottom: 3px solid var(--brand); background: #fffbea; border-radius: 6px 6px 0 0;
+  font: inherit; font-weight: 800; color: var(--brand); text-align: center; padding: 0 4px; margin: 0 2px; }
+input.fill:focus { outline: none; background: #fff1c9; }
+input.fill.ok { color: var(--ok); border-color: var(--ok); background: #e3f5ea; }
+input.fill.bad { color: var(--bad); border-color: var(--bad); background: #fde8e8; }
+.fill-text { line-height: 2.1; }
 
 .meter { height: 16px; background: #e6ebef; border-radius: 99px; overflow: hidden; }
 .meter > i { display: block; height: 100%; background: var(--brand); border-radius: 99px; transition: width .3s; }
