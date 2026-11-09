@@ -120,6 +120,9 @@ svg.plot .pulse circle { animation: pulse 1s infinite alternate; }
 .bucket { flex: 1; border: 3px dashed #c8d1d8; border-radius: 16px; padding: 10px; min-height: 120px; display: flex; flex-direction: column; gap: 6px; cursor: pointer; }
 .bucket:hover { border-color: var(--brand); background: #f3faf7; }
 .bucket h3 { margin: 0; }
+/* 지도 학습 상자는 안의 분류·회귀 칸을 누르는 것이라 바깥은 눌리지 않는다 */
+.bucket.group { cursor: default; }
+.bucket.group:hover { border-color: #c8d1d8; background: none; }
 .bucket .scard { max-width: none; font-size: 14px; padding: 5px 9px; }
 
 /* ── 대화상자 ── */
