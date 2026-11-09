@@ -268,7 +268,8 @@ function 사례카드(el, 수명, 도구) {
 
   el.append(h('div', { class: 'col grow' },
     h('h2', null, '군집 분석은 어디에 쓸까?'),
-    h('div', { class: 'row', style: { alignItems: 'stretch', gap: '14px', flex: 1, minHeight: '280px', flexWrap: 'nowrap' } }, 카드들),
+    h('div', { class: 'row', style: { alignItems: 'stretch', gap: '14px', flex: 1, minHeight: '280px', maxHeight: '360px', flexWrap: 'nowrap' } }, 카드들),
+    // ↑ 화면 분할로 무대가 세로로 길어지면 카드가 빈 채로 길게 늘어났다 — 360px 에서 멈춘다
     h('div', { class: 'panel col' },
       h('b', null, '🌱 생물 군집처럼, 우리 사회에서 「군집」을 이룬 것에는 어떤 것이 있을까요?'),
       h('textarea', {
