@@ -240,7 +240,7 @@ function 사례카드(el, 수명, 도구) {
         // 그림을 제목 옆에 두어 세로 자리를 아낀다 — 낱말 칩이 두세 줄로 늘어나도 단추가 카드 밖으로 밀려나지 않게
         h('h3', { style: { margin: 0, display: 'flex', alignItems: 'center', gap: '8px' } },
           h('span', { style: { fontSize: '34px', lineHeight: 1 } }, c.그림), c.이름),
-        h('p', { class: 'lead' }, '비슷한 것끼리 묶으려면 어떤 데이터가 필요할까? 골라 보세요.'),
+        h('p', { class: 'lead' }, c.질문),
         칩들,
         h('button', {
           class: 'btn primary', style: { marginTop: 'auto' },
@@ -257,6 +257,15 @@ function 사례카드(el, 수명, 도구) {
     return 겉;
   });
 
+  // 생각 칸에 10글자 이상 적으면 예시 답을 힌트로 보여 준다 — 먼저 스스로 떠올린 뒤 견주게 하려고 미리 보여 주지 않는다
+  const 예시답 = ['🛒 마트 진열대(과일·과자·음료)', '📚 도서관 분류(800 문학 …)', '🏫 동아리·모둠',
+    '🎵 음악 앱의 장르별 추천 목록', '🍜 먹자골목·전자상가 같은 상권', '🏭 산업 단지', '💳 쇼핑몰 고객 등급'];
+  const 힌트 = h('div', { class: 'row', style: { gap: '6px', alignItems: 'center' } },
+    h('span', { class: 'muted' }, '💡 이런 것도 군집이에요 —'),
+    ...예시답.map(w => h('span', { class: 'chip' }, w)));
+  const 힌트보이기 = () => { 힌트.style.display = 저장.생각.trim().length >= 10 ? '' : 'none'; };
+  힌트보이기();
+
   el.append(h('div', { class: 'col grow' },
     h('h2', null, '군집 분석은 어디에 쓸까?'),
     h('div', { class: 'row', style: { alignItems: 'stretch', gap: '14px', flex: 1, minHeight: '280px', flexWrap: 'nowrap' } }, 카드들),
@@ -264,8 +273,9 @@ function 사례카드(el, 수명, 도구) {
       h('b', null, '🌱 생물 군집처럼, 우리 사회에서 「군집」을 이룬 것에는 어떤 것이 있을까요?'),
       h('textarea', {
         class: 'note', rows: 2, placeholder: '예) 취향이 비슷한 사람끼리 모이는 동아리, 비슷한 상품끼리 모아 둔 마트 진열대 …',
-        onInput: e => { 저장.생각 = e.target.value; 저장하기(); 다했나(); },
-      }, 저장.생각)),
+        onInput: e => { 저장.생각 = e.target.value; 저장하기(); 힌트보이기(); 다했나(); },
+      }, 저장.생각),
+      힌트),
     피드백));
   다했나();
 }

@@ -15,11 +15,16 @@ const 탭들 = [탭0, 탭1, 탭2, 탭3, 탭4];
 const 무대 = document.getElementById('stage');
 
 // ── 무대 크기 맞추기: 1280×720 을 창에 꼭 맞게(비율 유지) ──
+// 창이 16:9 보다 세로로 길면(화면 분할 등) 너비에 맞추고 무대 높이를 늘려 위아래 검은 띠를 없앤다.
+// 카드가 flex 로 짜여 있어 늘어난 높이는 여유 자리가 된다. 아주 긴 창은 1200 에서 멈춘다(그 밖은 띠).
+const 최대높이 = 1200;
 function 맞추기() {
   const 배율 = Math.min(innerWidth / 1280, innerHeight / 720);
+  const 높이 = Math.min(최대높이, Math.max(720, innerHeight / 배율));
+  무대.style.height = 높이 + 'px';
   무대.style.transform = `scale(${배율})`;
   무대.style.left = (innerWidth - 1280 * 배율) / 2 + 'px';
-  무대.style.top = (innerHeight - 720 * 배율) / 2 + 'px';
+  무대.style.top = Math.max(0, (innerHeight - 높이 * 배율) / 2) + 'px';
 }
 addEventListener('resize', 맞추기);
 
