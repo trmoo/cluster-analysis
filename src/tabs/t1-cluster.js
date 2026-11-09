@@ -35,7 +35,14 @@ function 빈칸판(문단들, 열쇠, 끝) {
   const 적은 = 기록.get(열쇠, 칸들.map(() => ''));
   const 맞나 = (b, v) => b.답.some(a => 다듬기(a) === 다듬기(v));
   const 다맞음 = () => 칸들.every((b, i) => 맞나(b, 적은[i] || ''));
-  const 피드백 = h('div', { class: 'fb' });
+  // 다 맞혔다는 알림은 따로 상자를 두지 않고 머리 줄 글을 바꾼다 — 상자를 두면 왼쪽 칸이 넘쳐 꼬리말과 겹쳤다
+  const 안내 = h('span', { class: 'muted' });
+  const 안내쓰기 = () => {
+    const 다 = 다맞음();
+    안내.textContent = 다 ? '🎉 빈칸을 모두 채웠어요! 오른쪽 그림에서 거리도 재 보세요.' : '✏️ 빈칸에 알맞은 핵심어를 적어 보세요.';
+    안내.style.color = 다 ? 'var(--ok)' : '';
+    안내.style.fontWeight = 다 ? '800' : '';
+  };
   let 힌트켬 = false;
   const 입력들 = [];
   const 칠하기 = (inp, b, i) => {
@@ -52,8 +59,8 @@ function 빈칸판(문단들, 열쇠, 끝) {
       style: { width: (다듬기(조각.답[0]).length * 1.15 + 1.6) + 'em' },
       onInput: e => {
         적은[i] = e.target.value; 기록.set(열쇠, 적은); 칠하기(inp, 조각, i);
-        if (다맞음()) { 알림(피드백, '🎉 빈칸을 모두 채웠어요! 이제 오른쪽 그림에서 거리를 재 보세요.', 'ok'); 끝(); }
-        else 채우기(피드백);
+        안내쓰기();
+        if (다맞음()) 끝();
       },
     });
     입력들.push([inp, 조각, i]);
@@ -68,9 +75,9 @@ function 빈칸판(문단들, 열쇠, 끝) {
   }, '💡 초성 힌트');
   const 판 = h('div', { class: 'col', style: { gap: '8px' } },
     h('div', { class: 'row', style: { justifyContent: 'space-between' } },
-      h('span', { class: 'muted' }, '✏️ 빈칸에 알맞은 핵심어를 적어 보세요.'), 힌트단추),
-    ...문단요소, 피드백);
-  if (다맞음()) 알림(피드백, '🎉 빈칸을 모두 채웠어요!', 'ok');
+      안내, 힌트단추),
+    ...문단요소);
+  안내쓰기();
   return { 판, 다맞음 };
 }
 

@@ -178,7 +178,9 @@ input.fill { border: none; border-bottom: 3px solid var(--brand); background: #f
 input.fill:focus { outline: none; background: #fff1c9; }
 input.fill.ok { color: var(--ok); border-color: var(--ok); background: #e3f5ea; }
 input.fill.bad { color: var(--bad); border-color: var(--bad); background: #fde8e8; }
-.fill-text { line-height: 2.1; }
+/* 빈칸이 든 문단 — 빈칸·피드백까지 들어가면 왼쪽 칸이 넘쳐 아래 안내 줄이 꼬리말과 겹쳤다. 글씨와 줄 간격을 줄인다 */
+.fill-text { font-size: 15.5px; line-height: 1.85; padding-top: 8px; padding-bottom: 8px; }
+.fill-text input.fill { padding: 0 2px; }
 
 .meter { height: 16px; background: #e6ebef; border-radius: 99px; overflow: hidden; }
 .meter > i { display: block; height: 100%; background: var(--brand); border-radius: 99px; transition: width .3s; }
