@@ -329,31 +329,49 @@ function 종류(el, 수명, 도구) {
   const 피드백 = h('div', { class: 'fb' });
   const 남은칸 = h('div', { class: 'sort-cards' });
   const 통 = { 계층: h('div', { class: 'col', style: { gap: '5px' } }), 분할: h('div', { class: 'col', style: { gap: '5px' } }) };
+  // 설명 문장의 빈칸 — 핵심 낱말을 학생이 직접 적는다(띄어쓰기는 무시)
+  const 빈칸답 = { 순차: '순차적', 나무: '나무', 무작위: '무작위', 중심: '중심점' };
+  const 적은 = { ...기록.get('종류빈칸', {}) };
+  const 빈칸맞음 = 키 => (적은[키] || '').replace(/\s/g, '') === 빈칸답[키];
+  const 빈칸 = 키 => {
+    const 칸 = h('input', { class: 'fill', value: 적은[키] || '', style: { width: (빈칸답[키].length + 1.6) + 'em' }, onClick: e => e.stopPropagation() });
+    const 색칠 = () => { 칸.classList.toggle('ok', 빈칸맞음(키)); };
+    칸.addEventListener('input', () => { 적은[키] = 칸.value; 기록.set('종류빈칸', { ...적은 }); 색칠(); 다됐나(); });
+    색칠();
+    return 칸;
+  };
+  function 다됐나() {
+    const 카드끝 = Object.keys(놓은).length === 종류분류.length;
+    const 빈칸끝 = Object.keys(빈칸답).every(빈칸맞음);
+    if (카드끝 && 빈칸끝) {
+      알림(피드백, '🎉 다 했어요! 계층적은 「가까운 것부터 차례로, 되돌리지 않음」, 분할적은 「k개로 나누고 중심을 옮기며 다시 나눔」.', 'ok');
+      도구.완료();
+    } else if (카드끝) 알림(피드백, '카드는 다 넣었어요! 이제 위 상자 설명의 <b>빈칸</b>을 채워 보세요.', 'info');
+  }
   function 그리기() {
     채우기(남은칸, ...종류분류.map((c, i) => (i in 놓은 ? null : h('button', {
       class: 'scard' + (고른 === i ? ' sel' : ''), onClick: () => { 고른 = i; 그리기(); },
     }, c.글))));
     for (const n of ['계층', '분할']) 채우기(통[n], ...종류분류.map((c, i) => (i in 놓은 && c.답 === n ? h('div', { class: 'scard ok' }, c.글) : null)));
-    if (Object.keys(놓은).length === 종류분류.length) {
-      알림(피드백, '🎉 다 맞혔어요! 계층적은 「가까운 것부터 차례로, 되돌리지 않음」, 분할적은 「k개로 나누고 중심을 옮기며 다시 나눔」.', 'ok');
-      도구.완료();
-    }
+    다됐나();
   }
   function 넣기(n) {
-    if (고른 == null) { 알림(피드백, '먼저 위에서 카드를 하나 누르세요.', 'info'); return; }
+    if (고른 == null) { 알림(피드백, '먼저 아래에서 카드를 하나 누르세요.', 'info'); return; }
     if (종류분류[고른].답 === n) { 놓은[고른] = true; 기록.set('종류분류', { ...놓은 }); 고른 = null; 알림(피드백, '⭕ 맞아요!', 'ok'); }
     else 알림(피드백, '❌ 다시! 힌트: 계층적 군집은 <b>한 번 묶으면 끝</b>, 분할적 군집은 <b>중심점을 옮기며 다시 나눠요</b>.', 'bad');
     그리기();
   }
-  const 통상자 = (n, 제목, 방법, 그림) => h('div', { class: 'bucket', onClick: () => 넣기(n) },
-    h('h3', null, 제목), h('div', { class: 'muted' }, 방법), h('div', { style: { fontSize: '15px' } }, 그림), 통[n]);
+  const 통상자 = (n, 제목, 방법, ...그림) => h('div', { class: 'bucket', onClick: () => 넣기(n) },
+    h('h3', null, 제목), h('div', { class: 'muted' }, 방법), h('div', { style: { fontSize: '15px', lineHeight: 1.9 } }, ...그림), 통[n]);
   el.append(h('div', { class: 'col grow' },
     h('h2', null, '군집 분석의 종류 — 계층적 vs 분할적'),
-    h('p', { class: 'lead' }, '설명 카드를 누르고 알맞은 상자를 누르세요.'),
-    남은칸,
+    h('p', { class: 'lead' }, '상자 설명의 빈칸을 채우고, 아래 설명 카드를 누른 뒤 알맞은 상자를 누르세요.'),
     h('div', { class: 'row', style: { alignItems: 'stretch', flex: 1, minHeight: 0 } },
-      통상자('계층', '🌳 계층적 군집 분석', '단일 연결법 · 완전 연결법 · 평균 연결법 · 중심 연결법', '군집을 순차적으로 할당 — 가까운 개체끼리 차례로 묶어 나무 모양을 만들어요.'),
-      통상자('분할', '🧩 분할적 군집 분석', 'k-평균 군집 · 퍼지 군집 · 밀도 군집', '군집을 무작위로 할당한 뒤, 중심점을 옮기며 군집을 고쳐 나가요.')),
+      통상자('계층', '🌳 계층적 군집 분석', '단일 연결법 · 완전 연결법 · 평균 연결법 · 중심 연결법',
+        '군집을 (', 빈칸('순차'), ')으로 할당 — 가까운 개체끼리 차례로 묶어 (', 빈칸('나무'), ') 모양을 만들어요.'),
+      통상자('분할', '🧩 분할적 군집 분석', 'k-평균 군집 · 퍼지 군집 · 밀도 군집',
+        '군집을 (', 빈칸('무작위'), ')로 할당한 뒤, (', 빈칸('중심'), ')을 옮기며 군집을 고쳐 나가요.')),
+    남은칸,
     피드백));
   그리기();
 }
