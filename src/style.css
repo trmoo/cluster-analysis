@@ -194,3 +194,10 @@ input.fill.bad { color: var(--bad); border-color: var(--bad); background: #fde8e
 .label-ico { font-size: 34px; line-height: 1.1; }
 .label-tag { font-size: 14px; font-weight: 800; padding: 1px 9px; border-radius: 999px; background: #e2f4ee; color: var(--brand); white-space: nowrap; }
 .label-tag.none { background: #eef0f2; color: #8a96a2; }
+
+/* 할리갈리 — 컴퓨터 그룹의 경계에 있는 카드와 예시 답 */
+.hg.hg-edge { outline: 4px dashed #e0a400; outline-offset: 3px; animation: hg-edge 1.6s ease-in-out infinite; }
+@keyframes hg-edge { 50% { outline-color: #ffd65c; } }
+.hg .hg-q { position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%); font-size: 20px; background: #fff7d6; border: 2px solid #e0a400; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
+.hg-ex { font-size: 15px; color: #1d4b7a; background: #eaf2fb; border-radius: 8px; padding: 4px 10px; margin-left: 4px; }
+.hg-ex:empty { display: none; }

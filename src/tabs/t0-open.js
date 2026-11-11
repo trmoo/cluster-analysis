@@ -133,8 +133,57 @@ function 할리갈리묶기(el, 수명, 도구) {
 
   function 저장하기() { 기록.set('할리갈리', { k, 칠함, 기준, 컴이름 }); }
 
+  /** 컴퓨터가 만든 그룹을 사람이 읽을 수 있게 풀어 본다 — 무엇끼리 모였고, 어디서 갈렸나 */
+  function 컴퓨터풀이() {
+    const 표 = 묶음('컴');
+    const 그룹들 = [...Array(k).keys()].map(g => {
+      const 카드 = 할리갈리.map((c, i) => ({ ...c, i })).filter(c => 표[c.i] === g);
+      const 종류 = [...new Set(카드.map(c => c.과일))];
+      const 개수들 = 카드.map(c => c.개수);
+      const 평균 = 개수들.reduce((a, b) => a + b, 0) / (카드.length || 1);
+      return { g, 카드, 종류, 최소: Math.min(...개수들), 최대: Math.max(...개수들), 평균 };
+    });
+    // 한 종류가 거의 다(4분의 3 이상)인 그룹은 「색으로 갈린 무리」, 섞인 그룹은 「개수로 갈린 무리」
+    const 주종 = gr => gr.종류.map(f => [f, gr.카드.filter(c => c.과일 === f).length]).sort((a, b) => b[1] - a[1])[0];
+    const 섞임 = 그룹들.filter(gr => gr.카드.length && 주종(gr)[1] / gr.카드.length < 0.75).sort((a, b) => a.평균 - b.평균);
+
+    // 경계 카드 — 같은 개수의 같은 과일 종류가 다른 그룹에 있는데, 자기 그룹에서는 그 개수가 혼자인 카드
+    const 경계 = new Set();
+    for (const gr of 섞임) for (const c of gr.카드) {
+      const 다른곳 = 섞임.filter(o => o !== gr && o.카드.some(d => d.개수 === c.개수) && o.종류.includes(c.과일));
+      const 같은개수 = gr.카드.filter(d => d.개수 === c.개수).length;
+      if (다른곳.length && 다른곳.every(o => o.카드.filter(d => d.개수 === c.개수).length > 같은개수)) 경계.add(c.i);
+    }
+
+    for (const gr of 그룹들) {
+      if (!gr.카드.length) { gr.요약 = '카드 없음'; gr.예시 = ''; continue; }
+      const [f, n] = 주종(gr);
+      const 범위 = gr.최소 === gr.최대 ? `${gr.최소}개` : `${gr.최소}~${gr.최대}개`;
+      if (!섞임.includes(gr)) {
+        const 낀것 = gr.카드.filter(c => c.과일 !== f).map(c => `${과일[c.과일].이름} ${c.개수}`);
+        // 같은 과일이 여러 그룹으로 또 갈렸으면(k=4 의 자두) 그 안에서는 개수로 나뉜 것이다
+        const 형제 = 그룹들.filter(o => o !== gr && o.카드.length && !섞임.includes(o) && 주종(o)[0] === f);
+        const 많은쪽 = 형제.every(o => o.평균 < gr.평균);
+        gr.기준 = 형제.length ? '색깔·개수' : '색깔';
+        gr.요약 = `${과일[f].이름} ${n}장${낀것.length ? ' + ' + 낀것.join(', ') : ''} · 과일 ${범위}`;
+        gr.예시 = 형제.length
+          ? `${과일[f].이름} 가운데 과일이 ${많은쪽 ? '많은' : '적은'} 카드 무리 (${범위})`
+          : `${과일[f].이름}처럼 ${f === 2 ? '보라색' : '같은 색'} 과일이 모인 무리` + (낀것.length ? ` (${낀것.join(', ')}는 색이 진해서 함께 들어옴)` : '');
+      } else {
+        const 자리 = 섞임.indexOf(gr);
+        const 말 = 섞임.length === 1 ? '여러 과일이 섞인' : 자리 === 0 ? '과일이 적은' : 자리 === 섞임.length - 1 ? '과일이 많은' : '과일이 중간쯤인';
+        const 예외 = gr.카드.filter(c => 경계.has(c.i)).map(c => `${과일[c.과일].이름} ${c.개수}`);
+        gr.기준 = '개수';
+        gr.요약 = `${gr.종류.map(x => 과일[x].이름).join('·')} 섞임 · 과일 ${범위}`;
+        gr.예시 = `${말} 카드 무리 (대체로 ${범위})` + (예외.length ? ` — ${예외.join(', ')}는 경계에 있는 카드` : '');
+      }
+    }
+    return { 그룹들, 경계, 표 };
+  }
+
   function 판그리기() {
     const 이름표 = 묶음(보기);
+    const 경계 = 보기 === '컴' ? 컴퓨터풀이().경계 : new Set();
     // 다른 기준으로 볼 때는 같은 무리끼리 붙여 놓는다
     const 차례 = 할리갈리.map((_, i) => i);
     if (보기 !== '나') 차례.sort((a, b) => 이름표[a] - 이름표[b] || a - b);
@@ -148,8 +197,32 @@ function 할리갈리묶기(el, 수명, 도구) {
         },
       }, 카드그림(할리갈리[i]));
       if (g >= 0) 카드.append(h('span', { class: 'tag', style: { background: 색[g] } }, 보기 === '컴' ? 'ABCDEF'[g] : g + 1));
+      if (경계.has(i)) { 카드.classList.add('hg-edge'); 카드.append(h('span', { class: 'hg-q' }, '❓')); }
       return 카드;
     }));
+    if (보기 === '컴') 경계물음(경계);
+  }
+
+  /** 개수가 같은데 다른 그룹에 들어간 카드를 짚어 「그룹 이름은 사람이 해석한다」를 생각하게 한다 */
+  function 경계물음(경계) {
+    const 풀이 = 컴퓨터풀이();
+    const 이야기 = h('div', { class: 'col', style: { gap: '4px', fontSize: '15px' } },
+      h('b', null, '🔍 컴퓨터는 무엇을 보고 나눴을까?'),
+      ...풀이.그룹들.filter(gr => gr.카드.length).map(gr => h('div', { class: 'row', style: { gap: '8px', flexWrap: 'nowrap' } },
+        h('span', { class: 'badge', style: { background: 색[gr.g], color: '#fff' } }, 'ABCDEF'[gr.g]),
+        h('span', { class: 'chip', style: { cursor: 'default', padding: '1px 9px', background: gr.기준 === '개수' ? '#e8f1fb' : '#f3e8fb' } }, { 색깔: '🎨 색깔', 개수: '🔢 개수', '색깔·개수': '🎨 색깔 → 🔢 개수' }[gr.기준]),
+        h('span', null, gr.요약))));
+    if (경계.size) {
+      const [첫] = [...경계];
+      const c = 할리갈리[첫];
+      const 짝 = 할리갈리.filter((d, j) => j !== 첫 && d.개수 === c.개수 && 풀이.표[j] !== 풀이.표[첫] && 풀이.그룹들[풀이.표[j]].기준 === '개수')
+        .map(d => `${과일[d.과일].이름} ${d.개수}`);
+      이야기.append(h('div', { class: 'tip', html:
+        `❓ <b>${과일[c.과일].이름} ${c.개수}</b>는 ${[...new Set(짝)].join('·')}와 개수가 같은데 왜 다른 그룹일까요? ` +
+        `컴퓨터는 <b>색과 개수를 함께</b> 재어 가까운 쪽에 넣을 뿐이에요. ` +
+        `경계의 카드까지 보고 「과일이 많은 무리」라 불러도 될지는 <b>사람이 판단</b>해요.` }));
+    }
+    채우기(피드백, 이야기);
   }
 
   function 검사() {
@@ -171,12 +244,27 @@ function 할리갈리묶기(el, 수명, 도구) {
       컴: h('div', { class: 'col' },
         h('div', { class: 'fb bad' }, '🤖 인공지능은 그룹을 만들어 줄 뿐, 이 그룹에 어떤 의미가 있는지는 알려 주지 않아요! 「그룹 A」라는 이름뿐이에요.'),
         h('p', { class: 'lead' }, '컴퓨터가 만든 그룹에 사람이 이름을 붙여 보세요.'),
-        ...[...Array(k).keys()].map(g => h('div', { class: 'row' },
-          h('span', { class: 'badge', style: { background: 색[g], color: '#fff' } }, '그룹 ' + 'ABCDEF'[g]),
-          h('input', {
-            class: 'txt grow', placeholder: '예) 빨간 과일 무리', value: 컴이름[g] || '',
-            onInput: e => { 컴이름[g] = e.target.value; 저장하기(); },
-          })))),
+        ...(() => {
+          const 풀이 = 컴퓨터풀이();
+          return [...Array(k).keys()].map(g => {
+            // 스스로 이름을 먼저 지어 보게, 5글자(띄어쓰기 빼고) 이상 적어야 예시 답이 열린다
+            const 예시칸 = h('div', { class: 'hg-ex' });
+            const 예시보이기 = () => {
+              const 됨 = (컴이름[g] || '').replace(/\s/g, '').length >= 5;
+              채우기(예시칸, 됨 && 풀이.그룹들[g].예시 ? h('span', null, '💡 예시 답: ', h('b', null, 풀이.그룹들[g].예시)) : null);
+            };
+            예시보이기();
+            return h('div', { class: 'col', style: { gap: '3px' } },
+              h('div', { class: 'row', style: { flexWrap: 'nowrap' } },
+                h('span', { class: 'badge', style: { background: 색[g], color: '#fff' } }, '그룹 ' + 'ABCDEF'[g]),
+                h('input', {
+                  class: 'txt grow', placeholder: '이 그룹에 어울리는 이름', value: 컴이름[g] || '',
+                  onInput: e => { 컴이름[g] = e.target.value; 저장하기(); 예시보이기(); },
+                })),
+              예시칸);
+          });
+        })(),
+        h('div', { class: 'muted', style: { fontSize: '14px' } }, '✏️ 이름을 5글자 넘게 적으면 예시 답이 보여요.')),
     };
     채우기(오른쪽, 
       h('div', { class: 'panel col' },
@@ -187,7 +275,8 @@ function 할리갈리묶기(el, 수명, 도구) {
           })),
         h('div', { class: 'row' }, h('b', null, '보기'),
           고르기단추([{ 값: '나', 글: '✋ 내가 묶기' }, { 값: '종류', 글: '종류' }, { 값: '개수', 글: '개수' }, { 값: '컴', 글: '🤖 컴퓨터' }], 보기, v => {
-            보기 = v; 오른쪽그리기(); 판그리기(); if (v === '나') 검사(); else 피드백.textContent = '';
+            보기 = v; 피드백.className = 'fb'; 피드백.textContent = '';
+            오른쪽그리기(); 판그리기(); if (v === '나') 검사();
           }))),
       보기 === '나' ? h('div', { class: 'panel col' },
         h('b', null, '붓을 고르고 카드를 누르세요. 무리마다 기준도 적어요.'),
@@ -215,11 +304,11 @@ function 할리갈리묶기(el, 수명, 도구) {
 
 // ───────────────────────── 3. 군집 분석은 어디에 쓸까? ─────────────────────────
 function 사례카드(el, 수명, 도구) {
-  const 저장 = 기록.get('사례', { 고른: {}, 뒤집음: {}, 생각: '' });
+  const 저장 = 기록.get('사례', { 고른: {}, 뒤집음: {} });
   const 피드백 = h('div', { class: 'fb' });
   const 저장하기 = () => 기록.set('사례', 저장);
   const 다했나 = () => {
-    if (사례.every((_, i) => 저장.뒤집음[i]) && 저장.생각.trim().length >= 5) {
+    if (사례.every((_, i) => 저장.뒤집음[i])) {
       알림(피드백, '👍 좋아요! 군집 분석은 「비슷한 것끼리 묶어 맞춤으로 대응」하는 곳 어디에나 쓰여요.', 'ok');
       도구.완료();
     }
@@ -267,26 +356,10 @@ function 사례카드(el, 수명, 도구) {
     return 겉;
   });
 
-  // 생각 칸에 10글자 이상 적으면 예시 답을 힌트로 보여 준다 — 먼저 스스로 떠올린 뒤 견주게 하려고 미리 보여 주지 않는다
-  const 예시답 = ['🛒 마트 진열대(과일·과자·음료)', '📚 도서관 분류(800 문학 …)', '🏫 동아리·모둠',
-    '🎵 음악 앱의 장르별 추천 목록', '🍜 먹자골목·전자상가 같은 상권', '🏭 산업 단지', '💳 쇼핑몰 고객 등급'];
-  const 힌트 = h('div', { class: 'row', style: { gap: '6px', alignItems: 'center' } },
-    h('span', { class: 'muted' }, '💡 이런 것도 군집이에요 —'),
-    ...예시답.map(w => h('span', { class: 'chip' }, w)));
-  const 힌트보이기 = () => { 힌트.style.display = 저장.생각.trim().length >= 10 ? '' : 'none'; };
-  힌트보이기();
-
   el.append(h('div', { class: 'col grow' },
     h('h2', null, '군집 분석은 어디에 쓸까?'),
     h('div', { class: 'row', style: { alignItems: 'stretch', gap: '14px', flex: 1, minHeight: '280px', maxHeight: '360px', flexWrap: 'nowrap' } }, 카드들),
     // ↑ 화면 분할로 무대가 세로로 길어지면 카드가 빈 채로 길게 늘어났다 — 360px 에서 멈춘다
-    h('div', { class: 'panel col' },
-      h('b', null, '🌱 생물 군집처럼, 우리 사회에서 「군집」을 이룬 것에는 어떤 것이 있을까요?'),
-      h('textarea', {
-        class: 'note', rows: 2, placeholder: '예) 취향이 비슷한 사람끼리 모이는 동아리, 비슷한 상품끼리 모아 둔 마트 진열대 …',
-        onInput: e => { 저장.생각 = e.target.value; 저장하기(); 힌트보이기(); 다했나(); },
-      }, 저장.생각),
-      힌트),
     피드백));
   다했나();
 }
