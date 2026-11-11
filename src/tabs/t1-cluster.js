@@ -134,35 +134,50 @@ function 개념(el, 수명, 도구) {
 }
 
 // ───────────────────────── 2. 성적 데이터 손으로 군집화 ─────────────────────────
+// 카드 안을 네 단계로 나눈다 — ① 교과서 예시를 먼저 읽고 ② 축·군집 수를 정해 내가 묶고
+// ③ 군집마다 특징을 말로 적은 뒤 ④ 컴퓨터(k-평균)와 견준다. 앞 단계를 마쳐야 다음 단계가 열린다.
+const 손단계 = [
+  { id: '예', 글: '① 교과서 예시' },
+  { id: '나', 글: '② 내가 묶기' },
+  { id: '특징', 글: '③ 특징 적기' },
+  { id: '컴', 글: '④ k-평균 비교' },
+];
 function 손군집(el, 수명, 도구) {
   const 저장 = 기록.get('손군집', null);
   let x과목 = 저장?.x ?? '수학', y과목 = 저장?.y ?? '과학';
   let k = 저장?.k ?? null;
   let 칠함 = 저장?.칠함 ?? 성적.map(() => -1);
   let 기준 = 저장?.기준 ?? [];
-  let 붓 = 0, 보기 = '나';
+  let 단계 = 저장?.단계 ?? '예';
+  let 붓 = 0, 판보기 = '컴';   // ④ 에서 그림판에 무엇을 띄울지 (컴 / 나)
   const 피드백 = h('div', { class: 'fb' });
   const 표칸 = h('div');
   const 판칸 = h('div', { class: 'plot-box' });
   const 조절 = h('div', { class: 'col', style: { width: '400px' } });
 
-  const 저장하기 = () => 기록.set('손군집', { x: x과목, y: y과목, k, 칠함, 기준, 같음: 기록.get('손군집')?.같음 ?? null });
+  const 저장하기 = () => 기록.set('손군집', { x: x과목, y: y과목, k, 칠함, 기준, 단계, 같음: 기록.get('손군집')?.같음 ?? null });
+
+  // 단계가 열렸는지 — 다 칠했고 군집을 모두 썼나 / 특징을 모두 적었나
+  const 다칠함 = () => k != null && 칠함.every(v => v >= 0) && [...Array(k).keys()].every(g => 칠함.includes(g));
+  const 다적음 = () => 다칠함() && [...Array(k).keys()].every(g => (기준[g] || '').trim());
+  const 열림 = id => id === '예' || id === '나' || (id === '특징' && 다칠함()) || (id === '컴' && 다적음());
 
   function 지금묶음() {
-    if (보기 === '예') {
+    if (단계 === '예') {
       const 표 = 성적.map(() => -1);
       예시군집.묶음.forEach((m, g) => m.forEach(n => { 표[n - 1] = g; }));
       return { x: 예시군집.x, y: 예시군집.y, 이름표: 표, k: 3 };
     }
-    if (보기 === '컴') return { x: x과목, y: y과목, 이름표: 최선k평균(성적점(x과목, y과목), k, 3).이름표, k };
+    if (단계 === '컴' && 판보기 === '컴') return { x: x과목, y: y과목, 이름표: 최선k평균(성적점(x과목, y과목), k, 3).이름표, k };
     return { x: x과목, y: y과목, 이름표: 칠함, k: k ?? 0 };
   }
 
   function 표그리기(x, y) {
+    const 이름표 = 지금묶음().이름표;
     채우기(표칸, h('table', { class: 'grid' },
       h('tr', null, h('th', null, '번호'), 과목.map(c => h('th', { class: c === x || c === y ? 'hl' : '' }, c))),
       성적.map((r, i) => h('tr', null,
-        h('td', { style: { color: '#fff', background: 지금묶음().이름표[i] >= 0 ? 색[지금묶음().이름표[i]] : 회색, fontWeight: 800 } }, r.번호),
+        h('td', { style: { color: '#fff', background: 이름표[i] >= 0 ? 색[이름표[i]] : 회색, fontWeight: 800 } }, r.번호),
         과목.map(c => h('td', { class: c === x || c === y ? 'hl' : '' }, r[c]))))));
   }
 
@@ -174,9 +189,9 @@ function 손군집(el, 수명, 도구) {
     점들.forEach(([px, py], i) => {
       const 점g = 점(판, px, py, { r: 14, fill: 이름표[i] >= 0 ? 색[이름표[i]] : 회색, 글: 성적[i].번호 });
       점g.addEventListener('click', () => {
-        if (보기 !== '나') { 알림(피드백, '지금은 구경 중이에요. 「✋ 내 군집」으로 돌아가세요.', 'info'); return; }
+        if (단계 !== '나') { 알림(피드백, '점을 칠하는 것은 「② ✋ 내가 묶기」 단계에서 해요.', 'info'); return; }
         if (k == null) { 알림(피드백, '먼저 오른쪽에서 군집 수를 정하세요.', 'bad'); return; }
-        칠함[i] = 칠함[i] === 붓 ? -1 : 붓; 저장하기(); 다시(); 검사();
+        칠함[i] = 칠함[i] === 붓 ? -1 : 붓; 저장하기(); 다시(); 검사(); 조절그리기();
       });
       판.g.위.append(점g);
     });
@@ -185,22 +200,70 @@ function 손군집(el, 수명, 도구) {
   }
 
   function 검사() {
-    if (보기 !== '나' || k == null) return;
-    const 남음 = 칠함.filter(v => v < 0).length;
-    const 빈무리 = [...Array(k).keys()].filter(g => !칠함.includes(g));
-    const 빈기준 = [...Array(k).keys()].filter(g => !(기준[g] || '').trim());
-    if (남음) 알림(피드백, `붓을 고르고 점을 눌러 칠하세요. 남은 점 ${남음}개`, 'info');
-    else if (빈무리.length) 알림(피드백, `군집 ${빈무리.map(g => g + 1).join(', ')} 이 비어 있어요. 정한 군집 수 ${k}개를 모두 쓰세요.`, 'bad');
-    else if (빈기준.length) 알림(피드백, `군집 ${빈기준.map(g => g + 1).join(', ')} 의 기준을 적어 주세요.`, 'info');
-    else { 알림(피드백, '👏 완성! 「🤖 k-평균과 견주기」로 컴퓨터의 결과와 비교해 보세요.', 'ok'); 도구.완료(); }
+    if (단계 === '나' && k != null) {
+      const 남음 = 칠함.filter(v => v < 0).length;
+      const 빈무리 = [...Array(k).keys()].filter(g => !칠함.includes(g));
+      if (남음) 알림(피드백, `붓을 고르고 점을 눌러 칠하세요. 남은 점 ${남음}개`, 'info');
+      else if (빈무리.length) 알림(피드백, `군집 ${빈무리.map(g => g + 1).join(', ')} 이 비어 있어요. 정한 군집 수 ${k}개를 모두 쓰세요.`, 'bad');
+      else 알림(피드백, '👏 다 묶었어요! 「③ ✍️ 군집별 특징」으로 넘어가 군집마다 어떤 학생들인지 적어 보세요.', 'ok');
+    }
+    if (단계 === '특징') {
+      const 빈기준 = [...Array(k).keys()].filter(g => !(기준[g] || '').trim());
+      if (빈기준.length) 알림(피드백, `군집 ${빈기준.map(g => g + 1).join(', ')} 의 특징을 적어 주세요.`, 'info');
+      else 알림(피드백, '👏 완성! 「④ 🤖 k-평균과 비교」에서 컴퓨터는 어떻게 묶었는지 견주어 보세요.', 'ok');
+    }
+    if (다적음()) 도구.완료();
   }
+
+  function 단계가기(id) {
+    if (!열림(id)) {
+      알림(피드백, id === '특징' ? '먼저 ② 단계에서 모든 점을 칠하고, 정한 군집을 모두 쓰세요.' : '먼저 ③ 단계에서 군집마다 특징을 적으세요.', 'bad');
+      return;
+    }
+    단계 = id; 피드백.className = 'fb'; 피드백.textContent = ''; 저장하기(); 조절그리기(); 다시(); 검사();
+    if (id === '컴') 비교알림();
+  }
+
+  function 비교알림() {
+    const 컴 = 최선k평균(성적점(x과목, y과목), k, 3).이름표;
+    const 같음 = 같은정도(칠함, 컴);
+    기록.set('손군집', { ...기록.get('손군집'), 같음 });
+    알림(피드백, `🤖 컴퓨터(k-평균)도 ${k}개로 묶었어요. 나와 같은 정도 <b>${Math.round(같음 * 100)}%</b>. 색(번호)보다 <b>누구끼리 묶였는지</b>를 견주세요. 특징은 컴퓨터가 아니라 내가 적은 것이에요!`, 'info');
+  }
+
+  /** 군집 하나의 학생 수와 두 과목 평균 — 특징을 말로 적을 때 근거로 쓴다 */
+  function 군집요약(g, 이름표 = 칠함) {
+    const 학생 = 성적.filter((_, i) => 이름표[i] === g);
+    const 평균 = c => Math.round(학생.reduce((a, r) => a + r[c], 0) / (학생.length || 1));
+    return { 학생, 글: `${학생.length}명 (${학생.map(r => r.번호).join(', ')}번) · ${x과목} 평균 ${평균(x과목)} · ${y과목} 평균 ${평균(y과목)}` };
+  }
+
+  const 단계줄 = () => h('div', { class: 'seg', style: { flexWrap: 'nowrap', alignSelf: 'stretch', justifyContent: 'space-between' } }, 손단계.map(d => h('button', {
+    class: 'seg-b' + (단계 === d.id ? ' on' : ''), style: { opacity: 열림(d.id) ? 1 : 0.45, fontSize: '14px', padding: '6px 7px', whiteSpace: 'nowrap' },
+    onClick: () => 단계가기(d.id),
+  }, (열림(d.id) ? '' : '🔒 ') + d.글)));
+
+  // ③ 의 「④ 로」 단추 — 칸을 고칠 때마다 패널을 다시 그리면 입력 칸의 커서가 날아가서, 단추만 켜고 끈다
+  const 조절다음 = h('button', { class: 'btn sm primary', onClick: () => 단계가기('컴') }, '④ k-평균과 비교 ▶');
+  const 조절막대 = () => { 조절다음.disabled = !다적음(); };
 
   function 조절그리기() {
     const 축고르기 = (값, 다른, 바꿈) => h('select', {
       class: 'txt', disabled: k != null, onChange: e => { 바꿈(e.target.value); 저장하기(); 다시(); },
     }, 과목.filter(c => c !== 다른).map(c => h('option', { value: c, selected: c === 값 }, c)));
-    채우기(조절, 
-      h('div', { class: 'panel col' },
+
+    let 본문;
+    if (단계 === '예') {
+      본문 = h('div', { class: 'panel col' },
+        h('b', null, '📖 교과서는 이렇게 묶었어요'),
+        h('div', { class: 'row' }, h('span', { class: 'chip' }, '축: 가로 국어 · 세로 수학'), h('span', { class: 'chip' }, '군집 수: 3개')),
+        ...예시군집.기준.map((t, g) => h('div', { class: 'row', style: { flexWrap: 'nowrap', alignItems: 'flex-start' } },
+          h('span', { class: 'badge', style: { background: 색[g], color: '#fff', flex: 'none' } }, '군집 ' + (g + 1)),
+          h('div', null, h('b', null, t), h('div', { class: 'muted', style: { fontSize: '14px' } }, `${예시군집.묶음[g].join(', ')}번 학생`)))),
+        h('div', { class: 'tip', html: '💡 군집 분석은 <b>① 무엇을 볼지(축)</b> → <b>② 몇 개로 묶을지</b> → <b>③ 군집마다 어떤 특징인지 말하기</b> 차례로 해요. 이제 내가 해 볼 차례예요!' }),
+        h('button', { class: 'btn primary', onClick: () => 단계가기('나') }, '② 내가 묶어 보기 ▶'));
+    } else if (단계 === '나') {
+      본문 = h('div', { class: 'panel col' },
         h('div', { class: 'row' }, h('b', null, '① 축'), '가로', 축고르기(x과목, y과목, v => { x과목 = v; }), '세로', 축고르기(y과목, x과목, v => { y과목 = v; })),
         h('div', { class: 'row' }, h('b', null, '② 군집 수'),
           k == null
@@ -208,41 +271,55 @@ function 손군집(el, 수명, 도구) {
               class: 'btn sm', onClick: () => { k = v; 저장하기(); 조절그리기(); 다시(); 검사(); },
             }, v)))
             : h('span', null, h('b', { class: 'big-num', style: { fontSize: '22px' } }, k + '개'), h('span', { class: 'muted' }, ' (한번 정하면 바꾸지 않아요)'))),
-        h('div', { class: 'row' }, h('b', null, '보기'),
-          고르기단추([{ 값: '나', 글: '✋ 내 군집' }, { 값: '예', 글: '📖 교과서 예' }, { 값: '컴', 글: '🤖 k-평균' }], 보기, v => {
-            if (v === '컴' && k == null) { 알림(피드백, '군집 수를 먼저 정하세요.', 'bad'); 조절그리기(); return; }
-            보기 = v; 조절그리기(); 다시();
-            if (v === '컴') {
-              const 같음 = 같은정도(칠함, 지금묶음().이름표);
-              기록.set('손군집', { ...기록.get('손군집'), 같음 });
-              알림(피드백, `🤖 컴퓨터(k-평균)도 ${k}개로 묶었어요. 나와 같은 정도(두 학생이 같은 군집인지가 일치한 짝의 비율) <b>${Math.round(같음 * 100)}%</b>. 컴퓨터는 군집의 <b>의미</b>는 말해 주지 않아요!`, 'info');
-            } else if (v === '예') 알림(피드백, `교과서 (예): 국어·수학으로 3개 — ${예시군집.기준.map((t, g) => `<b style="color:${색[g]}">군집 ${g + 1}</b> ${t}`).join(' · ')}`, 'info');
-            else 검사();
-          }))),
-      k != null && 보기 === '나' ? h('div', { class: 'panel col' },
-        h('b', null, '③ 붓을 고르고 점을 눌러 묶은 뒤, 군집 기준을 적어요.'),
-        ...[...Array(k).keys()].map(g => h('div', { class: 'row', style: { flexWrap: 'nowrap' } },
-          h('button', {
+        k == null ? h('div', { class: 'muted' }, '축을 고르고 군집 수를 정하면 붓이 나와요.') : h('div', { class: 'col', style: { gap: '6px' } },
+          h('b', null, '③ 붓을 고르고 점을 눌러 칠해요.'),
+          h('div', { class: 'row', style: { gap: '6px' } }, [...Array(k).keys()].map(g => h('button', {
             class: 'btn sm', style: { background: 붓 === g ? 색[g] : '#fff', color: 붓 === g ? '#fff' : 색[g], borderColor: 색[g], minWidth: '74px' },
             onClick: () => { 붓 = g; 조절그리기(); },
-          }, '군집 ' + (g + 1)),
-          h('input', { class: 'txt grow', placeholder: '예) 수학·과학 모두 높음', value: 기준[g] || '', onInput: e => { 기준[g] = e.target.value; 저장하기(); 검사(); } }))),
-        h('button', {
-          class: 'btn sm warn', onClick: () => 대화상자('처음부터 다시 할까요?', '군집 수와 칠한 색, 기준이 모두 지워져요.', [
-            { 글: '그만두기' }, { 글: '지우기', 주: true, 할일: () => { k = null; 칠함 = 성적.map(() => -1); 기준 = []; 저장하기(); 조절그리기(); 다시(); 피드백.textContent = ''; } }]),
-        }, '↺ 처음부터 다시')) : null,
-      피드백,
-    );
+          }, '군집 ' + (g + 1)))),
+          h('div', { class: 'row' },
+            h('button', { class: 'btn sm primary', disabled: !다칠함(), onClick: () => 단계가기('특징') }, '③ 특징 적기 ▶'),
+            h('button', {
+              class: 'btn sm warn', onClick: () => 대화상자('처음부터 다시 할까요?', '축·군집 수와 칠한 색, 적은 특징이 모두 지워져요.', [
+                { 글: '그만두기' }, { 글: '지우기', 주: true, 할일: () => { k = null; 칠함 = 성적.map(() => -1); 기준 = []; 저장하기(); 조절그리기(); 다시(); 피드백.textContent = ''; } }]),
+            }, '↺ 처음부터 다시'))));
+    } else if (단계 === '특징') {
+      // 군집이 5개 넘으면 자리가 모자라 요약을 한 줄로 줄이고 도움말 상자를 뺀다
+      const 좁게 = k >= 5;
+      본문 = h('div', { class: 'panel col', style: 좁게 ? { gap: '6px' } : {} },
+        좁게 ? null : h('b', null, `군집마다 어떤 학생들인지 적어 보세요 (${x과목}·${y과목})`),
+        ...[...Array(k).keys()].map(g => h('div', { class: 'col', style: { gap: 좁게 ? '1px' : '3px' } },
+          h('div', { class: 'row', style: { flexWrap: 'nowrap' } },
+            h('span', { class: 'badge', style: { background: 색[g], color: '#fff', flex: 'none' } }, '군집 ' + (g + 1)),
+            h('span', { class: 'muted', style: { fontSize: '14px' } }, 군집요약(g).글)),
+          h('input', { class: 'txt', style: 좁게 ? { padding: '4px 10px' } : {}, placeholder: '예) 수학·과학 모두 높은 학생', value: 기준[g] || '', onInput: e => { 기준[g] = e.target.value; 저장하기(); 검사(); 조절막대(); } }))),
+        좁게 ? null : h('div', { class: 'tip', html: '💡 평균을 보고 <b>높음 · 중간 · 낮음</b>으로 말해 보세요. 교과서처럼 「수학 성적이 높은 학생」이면 충분해요.' }),
+        조절다음);
+      조절막대();
+    } else {
+      const 컴 = 최선k평균(성적점(x과목, y과목), k, 3).이름표;
+      본문 = h('div', { class: 'panel col' },
+        h('div', { class: 'row' }, h('b', null, '그림판'),
+          고르기단추([{ 값: '나', 글: '✋ 내 군집' }, { 값: '컴', 글: '🤖 k-평균' }], 판보기, v => { 판보기 = v; 다시(); })),
+        h('b', null, '내가 적은 특징 ↔ 컴퓨터 군집'),
+        ...[...Array(k).keys()].map(g => h('div', { class: 'row', style: { flexWrap: 'nowrap', alignItems: 'flex-start', fontSize: '14.5px' } },
+          h('span', { class: 'badge', style: { background: 색[g], color: '#fff', flex: 'none' } }, String(g + 1)),
+          h('div', null, h('b', null, 기준[g] || '—'),
+            h('div', { class: 'muted' }, '✋ ' + 군집요약(g).학생.map(r => r.번호).join(', ') + '번 · 🤖 ' + (군집요약(g, 컴).학생.map(r => r.번호).join(', ') || '없음') + (군집요약(g, 컴).학생.length ? '번' : ''))))));
+    }
+    채우기(조절, 단계줄(), 본문, 피드백);
   }
   function 다시() { 판그리기(); }
 
   el.append(
     h('div', { class: 'col', style: { width: '330px' } },
       h('h2', null, '✍️ 스스로 실습: 군집화하기'),
-      h('p', { class: 'lead' }, '성적 데이터셋으로 군집 수(2~6)와 군집 기준을 정해 직접 묶어 보세요.'),
+      h('p', { class: 'lead' }, '교과서 예시를 먼저 보고, 축과 군집 수를 정해 직접 묶은 뒤 특징을 말해 보세요.'),
       표칸),
     판칸, 조절);
+  if (!열림(단계)) 단계 = '나';
   조절그리기(); 다시(); 검사();
+  if (단계 === '컴') 비교알림();
 }
 
 // ───────────────────────── 3. 군집 분석의 종류 ─────────────────────────
