@@ -66,7 +66,7 @@ function 유사상이(el, 수명, 도구) {
     const 안 = 안합 / 안수;
     const 점수 = 실루엣점수(점들, 이름표);
     const 막대 = (이름, 값, 비율, c, 뜻) => h('div', null,
-      h('div', { class: 'row', style: { justifyContent: 'space-between' } }, h('b', null, 이름), h('span', null, 뜻, ' ', h('b', null, 수(값, 1)))),
+      h('div', { class: 'row', style: { justifyContent: 'space-between' } }, h('span', null, h('b', null, 이름), ' ', h('b', null, 수(값, 1))), h('span', null, 뜻)),
       h('div', { class: 'meter' }, h('i', { style: { width: Math.max(3, Math.min(100, 비율 * 100)) + '%', background: c } })));
     채우기(수치, 
       막대('군집 내 평균 거리', 안, 안 / 50, '#2e86de', '작을수록 유사성 ↑'),
@@ -104,8 +104,7 @@ function 유클리디언(el, 수명, 도구) {
   let A = [30, 20], B = [80, 60], 방식 = '유클리디언';
   const 판 = 좌표판({ w: 500, h: 500, x이름: 'x →', y이름: '↑ y' });
   const 식칸 = h('div', { class: 'col' });
-  const 문제칸 = h('div', { class: 'col' });
-  let 맞힌수 = 기록.get('거리문제', 0), 문제 = null, 문제번호 = 0;
+  const 본자리 = new Set();   // 점을 끌어 본 자리 — 여러 자리에서 식을 견주어 보면 완료
 
   const a점 = 점(판, ...A, { r: 15, fill: '#2e86de', 글: 'a' });
   const b점 = 점(판, ...B, { r: 15, fill: '#e4572e', 글: 'b' });
@@ -130,45 +129,14 @@ function 유클리디언(el, 수명, 도구) {
       s('text', { x: (판.sx(A[0]) + 판.sx(B[0])) / 2, y: 판.sy(A[1]) + (A[1] > B[1] ? -8 : 20), 'text-anchor': 'middle', fill: '#2e86de', 'font-weight': 800 }, `|a₁−b₁| = ${dx}`),
       s('text', { x: 판.sx(B[0]) + (B[0] >= A[0] && B[0] < 70 ? 8 : -8), y: (판.sy(A[1]) + 판.sy(B[1])) / 2, 'text-anchor': B[0] >= A[0] && B[0] < 70 ? 'start' : 'end', fill: '#e4572e', 'font-weight': 800 }, `|a₂−b₂| = ${dy}`));
     const d = 거리(A, B);
+    본자리.add(A.join() + '|' + B.join());
+    if (본자리.size >= 6) 도구.완료();
     채우기(식칸, 
       h('div', { class: 'row' }, h('span', { class: 'badge', style: { background: '#d6e8fa' } }, `a = (${A[0]}, ${A[1]})`), h('span', { class: 'badge', style: { background: '#fbdcd2' } }, `b = (${B[0]}, ${B[1]})`)),
       방식 === '유클리디언'
-        ? h('div', { class: 'formula', html: `d = √((a₁−b₁)² + (a₂−b₂)²)<br>= √((${A[0]}−${B[0]})² + (${A[1]}−${B[1]})²)<br>= √(${dx * dx} + ${dy * dy}) = √${dx * dx + dy * dy}<br>= <b style="color:#1f6f5c;font-size:28px">${수(d, 2)}</b>` })
+        ? h('div', { class: 'formula', html: `d = <span class="sqrt">√<span>(a₁−b₁)² + (a₂−b₂)²</span></span><br>= <span class="sqrt">√<span>(${A[0]}−${B[0]})² + (${A[1]}−${B[1]})²</span></span><br>= <span class="sqrt">√<span>${dx * dx} + ${dy * dy}</span></span> = <span class="sqrt">√<span>${dx * dx + dy * dy}</span></span><br>= <b style="color:#1f6f5c;font-size:28px">${수(d, 2)}</b>` })
         : h('div', { class: 'formula', html: `d = |a₁−b₁| + |a₂−b₂|<br>= ${dx} + ${dy} = <b style="color:#8e44ad;font-size:28px">${맨해튼(A, B)}</b><br><span style="font-size:15px">(유클리디언 ${수(d, 2)} 보다 길어요)</span>` }),
     );
-  }
-
-  function 새문제() {
-    const r = 난수(문제번호 * 97 + 13);
-    const i = Math.floor(r() * 10); let j = Math.floor(r() * 9); if (j >= i) j++;
-    const c1 = Math.floor(r() * 4); let c2 = Math.floor(r() * 3); if (c2 >= c1) c2++;
-    문제 = { i, j, 과: [과목[c1], 과목[c2]] };
-    문제번호++;
-    문제그리기();
-  }
-  function 문제그리기() {
-    const { i, j, 과 } = 문제;
-    const 답 = 거리([성적[i][과[0]], 성적[i][과[1]]], [성적[j][과[0]], 성적[j][과[1]]]);
-    const 입력 = h('input', { class: 'txt', style: { width: '120px' }, placeholder: '소수 둘째 자리' });
-    const 피 = h('div', { class: 'fb' });
-    const 확인 = () => {
-      const v = Number(입력.value.replace(/,/g, ''));
-      if (입력.value.trim() === '' || !isFinite(v)) { 알림(피, '숫자를 적어 주세요.', 'bad'); return; }
-      if (Math.abs(v - 답) <= 0.1) {
-        맞힌수++; 기록.set('거리문제', 맞힌수);
-        알림(피, `⭕ 정답! ${수(답, 2)} (맞힌 문제 ${맞힌수}개)`, 'ok');
-        if (맞힌수 >= 3) 도구.완료();
-      } else {
-        const d1 = 성적[i][과[0]] - 성적[j][과[0]], d2 = 성적[i][과[1]] - 성적[j][과[1]];
-        알림(피, `💡 힌트: √((${d1})² + (${d2})²) = √(${d1 * d1} + ${d2 * d2}) — 계산기의 √ 를 써도 돼요.`, 'bad');
-      }
-    };
-    입력.addEventListener('keydown', e => { if (e.key === 'Enter') 확인(); });
-    채우기(문제칸, 
-      h('b', null, `✍️ 직접 계산: ${i + 1}번과 ${j + 1}번 학생의 거리 (${과[0]}·${과[1]})`),
-      h('div', { class: 'muted' }, `${i + 1}번 (${과[0]} ${성적[i][과[0]]}, ${과[1]} ${성적[i][과[1]]}) · ${j + 1}번 (${과[0]} ${성적[j][과[0]]}, ${과[1]} ${성적[j][과[1]]})`),
-      h('div', { class: 'row' }, 입력, h('button', { class: 'btn primary sm', onClick: 확인 }, '확인'), h('button', { class: 'btn sm', onClick: 새문제 }, '다른 문제')),
-      피);
   }
 
   el.append(
@@ -178,9 +146,8 @@ function 유클리디언(el, 수명, 도구) {
       h('p', { class: 'lead' }, '두 점 a, b 를 끌어 보세요. 직각삼각형의 빗변이 바로 두 점 사이의 직선 거리예요.'),
       h('div', { class: 'row' }, 고르기단추([{ 값: '유클리디언', 글: '📏 유클리디언(직선)' }, { 값: '맨해튼', 글: '[참고] 맨해튼(바둑판 길)' }], 방식, v => { 방식 = v; 그리기(); })),
       식칸,
-      h('div', { class: 'tip', html: '💡 속성이 여러 개여도 같아요. 4과목이면 <b>√((국어차)²+(수학차)²+(정보차)²+(과학차)²)</b> — 다음 카드에서 확인해요.' }),
-      h('div', { class: 'panel' }, 문제칸)));
-  그리기(); 새문제();
+      h('div', { class: 'tip', html: '💡 속성이 여러 개여도 같아요. 4과목이면 <b><span class="sqrt">√<span>(국어차)²+(수학차)²+(정보차)²+(과학차)²</span></span></b> — 다음 카드에서 확인해요.' })));
+  그리기();
 }
 
 // ───────────────────────── 3. 가장 닮은 친구 찾기 ─────────────────────────
@@ -221,7 +188,7 @@ function 닮은친구(el, 수명, 도구) {
       h('table', { class: 'grid' },
         h('tr', null, h('th', null, '과목'), h('th', null, `${a.번호}번`), h('th', null, `${b.번호}번`), h('th', null, '차이²')),
         줄들.map(({ c, 차 }) => h('tr', null, h('td', null, c), h('td', null, a[c]), h('td', null, b[c]), h('td', null, 차 * 차)))),
-      h('div', { class: 'formula', html: `√(${줄들.map(x => x.차 * x.차).join(' + ')}) = <b>${수(D[고른학생][짝], 2)}</b>` }),
+      h('div', { class: 'formula', html: `<span class="sqrt">√<span>${줄들.map(x => x.차 * x.차).join(' + ')}</span></span> = <b>${수(D[고른학생][짝], 2)}</b>` }),
     );
     const 열쇠 = [...고른과목].sort().join('·') + '|' + 고른학생;
     본기준.add([...고른과목].sort().join('·'));
@@ -324,8 +291,7 @@ function 실습(el, 수명, 도구) {
     h('div', { class: 'col grow' },
       h('h2', null, '✍️ 스스로 실습: 유사성을 기준으로 군집화하기'),
       h('div', { class: 'panel', html: '성적 데이터를 <b>3개의 중심점(◆)</b>을 기준으로 군집에 넣어요. 먼저 ①~⑤ 를, 그다음 ⑥~⑩ 을 하나씩 더하며 <b>중심점과 가장 가까운 군집</b>에 넣어 보세요.' }),
-      단추칸, 피드백, 끝칸,
-      h('div', { class: 'tip', html: '📕 교과서 131쪽 본문에는 「수학과 국어 성적」이라고 적혀 있지만, 실습 그림의 축은 <b>수학(가로)–과학(세로)</b> 이에요. 이 앱은 그림을 따랐어요. 중심점 위치는 그림에서 읽은 값이에요.' })));
+      단추칸, 피드백, 끝칸));
   그리기();
 }
 

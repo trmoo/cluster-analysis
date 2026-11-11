@@ -83,6 +83,9 @@ input, textarea, select { font: inherit; }
 .tip { background: var(--tip); border: 1px solid #f0dd9a; border-radius: 11px; padding: 8px 12px; font-size: 15.5px; }
 .tip b { color: #8a5a00; }
 .formula { font-family: 'Cambria Math', 'Times New Roman', 'NanumSquareRound', serif; font-size: 20px; background: #f3f6f8; border-radius: 10px; padding: 8px 12px; text-align: center; }
+/* 루트: 기호 √ 뒤 묶음 위에 가로줄(괄호 대신) */
+.sqrt { white-space: nowrap; }
+.sqrt > span { border-top: 1.5px solid currentColor; padding: 1px 3px 0; margin-left: 1px; }
 .formula .frac { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; margin: 0 4px; }
 .formula .frac > span:first-child { border-bottom: 2px solid currentColor; padding: 0 4px; }
 .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-weight: 800; font-size: 14px; background: #e7ece9; }
