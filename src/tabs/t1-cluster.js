@@ -552,6 +552,9 @@ function 계층(el, 수명, 도구) {
   const 왼판칸 = h('div', { class: 'plot-box' });
   const 나무칸 = h('div', { class: 'plot-box' });
   const 설명칸 = h('div', { class: 'fb' });
+  // 단일 연결법이 기본, 나머지 셋은 [심화] — 고른 연결법의 뜻을 덴드로그램 바로 위에 보여 준다
+  const 연결풀이 = v => (v === 'single' ? '📏 ' : '📏 <b>[심화]</b> ') + `${연결이름[v]}: 군집 사이 거리 = ${연결설명[v]}`;
+  const 연결글 = h('div', { class: 'tip', html: 연결풀이(연결) });
   const 상태 = h('div', { class: 'row' });
 
   function 그리기() {
@@ -623,7 +626,8 @@ function 계층(el, 수명, 도구) {
     h('div', { class: 'col grow' },
       h('div', { class: 'row' },
         h('b', null, '축'), 고르기단추([{ 값: '국어,수학', 글: '국어·수학' }, { 값: '수학,과학', 글: '수학·과학' }], 축.join(), v => { 축 = v.split(','); 그리기(); }),
-        h('b', null, '연결'), 고르기단추(Object.entries(연결이름).map(([값, 글]) => ({ 값, 글: 글.replace(' 연결법', '') })), 연결, v => { 연결 = v; 그리기(); 연결글.innerHTML = `📏 ${연결이름[v]}: 군집 사이 거리 = ${연결설명[v]}`; })),
+        h('b', null, '연결'), 고르기단추(Object.entries(연결이름).map(([값, 글]) => ({ 값, 글: (값 === 'single' ? '' : '[심화] ') + 글.replace(' 연결법', '') })), 연결, v => { 연결 = v; 그리기(); 연결글.innerHTML = 연결풀이(v); })),
+      연결글,
       나무칸,
       h('div', { class: 'row' },
         h('button', { class: 'btn primary', onClick: () => { if (m < n - 1) { m++; 그리기(); } } }, '한 번 묶기 ▶'),
@@ -632,10 +636,8 @@ function 계층(el, 수명, 도구) {
         h('button', { class: 'btn', onClick: () => { m = 0; 그리기(); } }, '↺ 처음'),
         상태),
       설명칸,
-      (연결글 => 연결글)(h('div', { class: 'tip', html: `📏 ${연결이름[연결]}: 군집 사이 거리 = ${연결설명[연결]}` })),
       h('div', { class: 'muted' }, '🌳 이 나무 그림을 덴드로그램이라 불러요. 가로선이 높을수록 먼 군집끼리 늦게 묶인 거예요. 군집 수를 미리 정하지 않고, 원하는 높이에서 잘라 군집을 정해요.')),
   );
-  const 연결글 = el.querySelector('.tip');
   그리기();
 }
 
