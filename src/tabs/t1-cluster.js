@@ -333,13 +333,22 @@ function 종류(el, 수명, 도구) {
   const 빈칸답 = { 순차: '순차적', 나무: '나무', 무작위: '무작위', 중심: '중심점' };
   const 적은 = { ...기록.get('종류빈칸', {}) };
   const 빈칸맞음 = 키 => (적은[키] || '').replace(/\s/g, '') === 빈칸답[키];
+  let 힌트켬 = false;
+  const 빈칸들 = [];
   const 빈칸 = 키 => {
     const 칸 = h('input', { class: 'fill', value: 적은[키] || '', style: { width: (빈칸답[키].length + 1.6) + 'em' }, onClick: e => e.stopPropagation() });
     const 색칠 = () => { 칸.classList.toggle('ok', 빈칸맞음(키)); };
     칸.addEventListener('input', () => { 적은[키] = 칸.value; 기록.set('종류빈칸', { ...적은 }); 색칠(); 다됐나(); });
     색칠();
+    빈칸들.push([칸, 키]);
     return 칸;
   };
+  const 힌트단추 = h('button', {
+    class: 'btn sm', onClick: () => {
+      힌트켬 = !힌트켬; 힌트단추.textContent = 힌트켬 ? '💡 초성 숨기기' : '💡 초성 힌트';
+      빈칸들.forEach(([칸, 키]) => { 칸.placeholder = 힌트켬 ? 초성(빈칸답[키]) : ''; });
+    },
+  }, '💡 초성 힌트');
   function 다됐나() {
     const 카드끝 = Object.keys(놓은).length === 종류분류.length;
     const 빈칸끝 = Object.keys(빈칸답).every(빈칸맞음);
@@ -365,7 +374,8 @@ function 종류(el, 수명, 도구) {
     h('h3', null, 제목), h('div', { class: 'muted' }, 방법), h('div', { style: { fontSize: '15px', lineHeight: 1.9 } }, ...그림), 통[n]);
   el.append(h('div', { class: 'col grow' },
     h('h2', null, '군집 분석의 종류 — 계층적 vs 분할적'),
-    h('p', { class: 'lead' }, '상자 설명의 빈칸을 채우고, 아래 설명 카드를 누른 뒤 알맞은 상자를 누르세요.'),
+    h('div', { class: 'row', style: { justifyContent: 'space-between' } },
+      h('p', { class: 'lead', style: { margin: 0 } }, '상자 설명의 빈칸을 채우고, 아래 설명 카드를 누른 뒤 알맞은 상자를 누르세요.'), 힌트단추),
     h('div', { class: 'row', style: { alignItems: 'stretch', flex: 1, minHeight: 0 } },
       통상자('계층', '🌳 계층적 군집 분석', '단일 연결법 · 완전 연결법 · 평균 연결법 · 중심 연결법',
         '군집을 (', 빈칸('순차'), ')으로 할당 — 가까운 개체끼리 차례로 묶어 (', 빈칸('나무'), ') 모양을 만들어요.'),
