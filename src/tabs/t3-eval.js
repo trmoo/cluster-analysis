@@ -24,6 +24,43 @@ function 수직선(값) {
 }
 const 해석 = v => (v >= 0.5 ? ['자기 군집에 잘 어울려요 (1에 가까움)', 'ok'] : v >= 0 ? ['군집의 경계에 걸친 애매한 상태예요 (0에 가까움)', 'info'] : ['다른 군집에 더 가까워요 — 잘못 묶인 상태 (음수)', 'bad']);
 
+/** 「실루엣 계수」와 「실루엣 점수」는 무엇이 다를까 — 고1 눈높이 설명 창 */
+function 계수점수설명() {
+  const 예 = [0.8, 0.6, -0.2];
+  const 평균 = 예.reduce((t, v) => t + v, 0) / 예.length;
+  const 막대들 = h('div', { class: 'col', style: { gap: '4px' } },
+    예.map((v, i) => h('div', { class: 'row', style: { gap: '8px', fontSize: '15px' } },
+      h('span', { style: { width: '64px' } }, `학생 ${i + 1}`),
+      h('span', { style: { display: 'inline-block', height: '14px', width: Math.abs(v) * 160 + 'px', background: v < 0 ? '#e57373' : '#4db6ac', borderRadius: '3px' } }),
+      h('b', null, `계수 ${수(v, 1)}`))),
+    h('div', { style: { fontSize: '15px', color: '#d32f2f', fontWeight: 800 } }, `→ 평균 (0.8 + 0.6 − 0.2) ÷ 3 = ${수(평균, 1)}`),
+    h('div', { style: { fontSize: '15px', color: '#d32f2f', fontWeight: 800 } }, '　 ↑ 이것이 실루엣 점수'));
+  const 줄 = (이름, 계수, 점수) => h('tr', null, h('th', null, 이름), h('td', null, 계수), h('td', null, 점수));
+  const 본문 = h('div', { class: 'col', style: { gap: '8px', fontSize: '15px' } },
+    h('div', { class: 'panel', style: { padding: '8px 12px' }, html:
+      '🏫 <b>모둠 활동</b>으로 생각해 봐요. 선생님이 반을 모둠으로 나눈 뒤 한 사람씩 물어요.<br>' +
+      '「너는 <b>지금 모둠</b>이 <b>옆 모둠</b>보다 더 잘 맞니?」<br>' +
+      '· 한 사람 한 사람의 대답 = <b>실루엣 계수</b> (사람 수만큼 있다)<br>' +
+      '· 반 전체 대답의 <b>평균</b> = <b>실루엣 점수</b> (이번 모둠 나누기에 매긴 성적표, 딱 하나)' }),
+    h('div', { class: 'row', style: { gap: '14px', alignItems: 'flex-start' } },
+    막대들,
+    h('table', { class: 'grid', style: { fontSize: '14px', flex: 1 } },
+      h('tr', null, h('th', null, ''), h('th', null, '실루엣 계수 s(i)'), h('th', null, '실루엣 점수')),
+      줄('누구에게?', '데이터 하나하나에', '군집화 결과 전체에'),
+      줄('몇 개?', '데이터 개수만큼', '딱 하나'),
+      줄('어떻게 구해?', '(b − a) ÷ (a, b 중 큰 값)', '모든 계수의 평균'),
+      줄('무엇을 알려 줘?', '이 점이 제 군집에 잘 들어갔나', '이렇게 나눈 것이 전체로 잘 됐나'),
+      줄('어디에 써?', '잘못 묶인 점(음수) 찾기', '가장 알맞은 k 고르기'),
+      줄('그래프에서는?', '막대 하나하나', '빨간 점선 하나'))),
+    h('div', { class: 'tip', style: { fontSize: '14.5px' }, html:
+      '⚠ 점수(평균)가 높아도 <b>음수인 점</b>이 숨어 있을 수 있어요. 평균만 보면 안 보이니까 ' +
+      '실루엣 그래프로 <b>막대(계수)와 점선(점수)을 함께</b> 봐요.<br>' +
+      '📌 책이나 프로그램에 따라 둘 다 그냥 「실루엣 계수」라고 부르기도 해요. 「점 하나의 값인가, 전체 평균인가」만 구분하면 돼요.' }));
+  대화상자('🤔 실루엣 계수 vs 실루엣 점수', 본문);
+  const 창 = 본문.closest('.modal');
+  if (창) 창.style.width = '880px';   // 표와 예시를 나란히 두려고 이 창만 넓힌다
+}
+
 // ───────────────────────── 1. 실루엣 계수의 원리 ─────────────────────────
 function 실루엣원리(el, 수명, 도구) {
   const 무리 = {
@@ -103,7 +140,7 @@ function 실루엣원리(el, 수명, 도구) {
   el.append(
     h('div', { class: 'plot-box' }, 판.svg),
     h('div', { class: 'col grow' },
-      h('div', { class: 'row' }, h('h2', { style: { margin: 0 } }, '실루엣 계수 (Silhouette Coefficient)'), h('button', { class: 'btn sm', onClick: 예시 }, '📕 교과서 예시')),
+      h('div', { class: 'row' }, h('h2', { style: { margin: 0 } }, '실루엣 계수 (Silhouette Coefficient)'), h('button', { class: 'btn sm', onClick: 예시 }, '📕 교과서 예시'), h('button', { class: 'btn sm', onClick: 계수점수설명 }, '🤔 계수 vs 점수')),
       h('p', { class: 'lead' }, '데이터 X 를 끌어 보세요. X 는 언제나 군집 A 소속이에요. 군집 내 평균 거리 a 와 가장 가까운 다른 군집과의 평균 거리 b 를 견주어요.'),
       계산칸, h('div', { class: 'panel' }, 도전칸)));
   그리기();
@@ -184,8 +221,8 @@ function 실루엣그래프(el, 수명, 도구) {
     채우기(조건칸, h('b', null, '✅ 좋은 군집화의 조건'), 조건.map(([글, 통과, 근거]) => h('div', { style: { fontSize: '15px' } }, 통과 ? '🟢 ' : '🔴 ', 글, h('span', { class: 'muted' }, ` — ${근거}`))));
     if (고른점 >= 0) {
       const x = 목록[고른점];
-      채우기(정보, h('div', { class: 'fb ' + 해석(x.s)[1], html: `고른 점: a = ${수(x.a, 1)}, b = ${수(x.b, 1)} → s = <b>${수(x.s, 2)}</b> · ${해석(x.s)[0]}` }));
-    } else 채우기(정보, h('div', { class: 'muted' }, '점이나 막대를 누르면 그 데이터의 a, b, s 를 보여 줘요. 테두리가 검은 점은 실루엣 계수가 음수예요.'));
+      채우기(정보, h('div', { class: 'fb ' + 해석(x.s)[1], html: `고른 점의 실루엣 계수: a = ${수(x.a, 1)}, b = ${수(x.b, 1)} → s = <b>${수(x.s, 2)}</b> · ${해석(x.s)[0]} <span class="muted">(전체 평균 = 실루엣 점수 ${수(점수, 2)})</span>` }));
+    } else 채우기(정보, h('div', { class: 'muted' }, '막대 하나 = 점 하나의 실루엣 계수, 빨간 점선 = 모두의 평균인 실루엣 점수. 점이나 막대를 누르면 그 점의 a, b, s 를 보여 줘요. 테두리가 검은 점은 계수가 음수예요.'));
     기록.set('실루엣그래프', { 데이터: 연습데이터[데이터].이름, k, 점수, 조건: 조건.map(c => c[1]) });
     if (해본k.size >= 3) 도구.완료();
   }
@@ -196,7 +233,7 @@ function 실루엣그래프(el, 수명, 도구) {
       h('div', { class: 'row' }, h('b', null, '군집 수 k'), 고르기단추([2, 3, 4, 5, 6].map(v => ({ 값: v, 글: v })), k, v => { k = v; 고른점 = -1; 그리기(); })),
       왼칸),
     h('div', { class: 'col grow' },
-      h('h2', { style: { margin: 0 } }, '실루엣 그래프로 군집 평가하기'),
+      h('div', { class: 'row' }, h('h2', { style: { margin: 0 } }, '실루엣 그래프로 군집 평가하기'), h('button', { class: 'btn sm', onClick: 계수점수설명 }, '🤔 계수 vs 점수')),
       막대칸,
       h('div', { class: 'panel col', style: { gap: '6px' } }, 조건칸, 정보)));
   그리기();
