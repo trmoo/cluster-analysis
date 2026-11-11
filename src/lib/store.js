@@ -19,5 +19,8 @@ export const 기록 = {
   완료(id) { const d = 상태.완료 || {}; if (!d[id]) { d[id] = true; 상태.완료 = d; 저장(); } },
   완료됨(id) { return !!(상태.완료 || {})[id]; },
   지우기() { 상태 = {}; 저장(); },
+  /** 통째로 꺼내기·넣기 — 「다음 시간에 이어하기」 파일에 담았다가 다시 불러온다 */
+  전부() { return JSON.parse(JSON.stringify(상태)); },
+  불러오기(새것) { 상태 = 새것 && typeof 새것 === 'object' ? 새것 : {}; 저장(); },
   구독(fn) { 듣는이.add(fn); return () => 듣는이.delete(fn); },
 };

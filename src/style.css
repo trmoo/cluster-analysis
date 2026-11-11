@@ -201,3 +201,7 @@ input.fill.bad { color: var(--bad); border-color: var(--bad); background: #fde8e
 .hg .hg-q { position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%); font-size: 20px; background: #fff7d6; border: 2px solid #e0a400; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
 .hg-ex { font-size: 15px; color: #1d4b7a; background: #eaf2fb; border-radius: 8px; padding: 4px 10px; margin-left: 4px; }
 .hg-ex:empty { display: none; }
+
+/* 카드 줄 오른쪽 — 「다음 시간에 이어하기」·「군집 분석 실험실 완료」 */
+.sub-acts { display: flex; gap: 6px; flex: none; }
+.sub-act { font-size: 14px; padding: 6px 11px; white-space: nowrap; }

@@ -8,7 +8,7 @@ import { 기록 } from './lib/store.js';
 import { 좌표판, 점, 중심점, 군집영역, 선, 꺾은선, 색, 회색, 보기좋은축 } from './lib/plot.js';
 import { 성적, 성적점, 실습131, 학습분류, 사례, 확인문제, 정리빈칸, 실루엣예시 } from './data.js';
 import 탭0 from './tabs/t0-open.js';
-import 탭1 from './tabs/t1-cluster.js';
+import 탭1, { 종류탭 } from './tabs/t1-cluster.js';
 import 탭2 from './tabs/t2-similar.js';
 import 탭3 from './tabs/t3-eval.js';
 import 탭4 from './tabs/t4-wrap.js';
@@ -61,7 +61,7 @@ function 표(머리, 줄들, 넓이) {
 }
 
 function 쪽1() {
-  const 탭들 = [탭0, 탭1, 탭2, 탭3, 탭4];
+  const 탭들 = [탭0, 탭1, 탭2, 종류탭, 탭3, 탭4];
   const 목록 = 탭들.flatMap(t => t.카드.filter(c => c.id !== 'pdf').map(c => ({ 글: `${t.이름} · ${c.제목}`, 끝: 기록.완료됨(`${t.id}/${c.id}`) })));
   const 마친 = 목록.filter(x => x.끝).length;
   const 오늘 = new Date();
@@ -126,18 +126,18 @@ function 쪽3() {
   const km = 기록.get('k평균');
   const 실 = 기록.get('출발점실험');
   const 계 = 기록.get('계층');
-  return 쪽(3,
-    제목('2', '군집 분석의 종류'),
+  return 쪽(4,
+    제목('3', '군집 분석의 종류'),
     표(['구분', '계층적 군집 분석', '분할적 군집 분석'], [
       ['방법', '가장 가까운 개체끼리 차례로 묶기를 되풀이', 'k개 군집으로 나누고 중심점을 옮기며 고침'],
       ['예', '단일·완전·평균·중심 연결법', 'k-평균 군집, 퍼지 군집, 밀도 군집'],
       ['특징', '군집 수를 미리 정하지 않음, 한번 묶이면 못 바꿈, 큰 데이터에 어려움', '군집 수 k 를 미리 정함, 군집이 바뀔 수 있음, 초기 중심점에 민감'],
     ]),
     // 앱의 카드 차례(계층적 군집 → k-평균 시뮬레이터)를 따른다
-    제목('3', '계층적 군집 분석'),
+    제목('4', '계층적 군집 분석'),
     계 ? h('p', null, `${계.축.join('·')} 성적으로 ${계.연결}을 써서 10명을 9번 묶었다. 묶은 거리: ${계.높이.map(v => 수(v, 1)).join(' → ')}`) : 안함('「군집 분석 › 계층적 군집」'),
     h('p', { class: 'p-note' }, '덴드로그램을 원하는 높이에서 자르면 군집 수가 정해진다.'),
-    제목('4', 'k-평균(K-Means) 군집 분석'),
+    제목('5', 'k-평균(K-Means) 군집 분석'),
     h('ol', null,
       h('li', null, 'k개만큼 중심점을 (임의로) 정한다.'),
       h('li', null, '각 데이터를 가장 가까운 중심점의 군집으로 묶는다.'),
@@ -185,8 +185,8 @@ function 쪽4() {
     const svg = 군집그림(점들, 이름표, { k: 3, 글: i => i + 1, 축: ['수학 →', '↑ 과학'] });
     실그림 = svg;
   }
-  return 쪽(4,
-    제목('5', '유사성과 상이성'),
+  return 쪽(3,
+    제목('2', '유사성과 상이성'),
     표(['', '뜻'], [
       ['군집 내 유사성', '같은 군집의 데이터끼리 거리가 가까울수록 높다 (무리 안에서는 친하게)'],
       ['군집 간 상이성', '서로 다른 군집 사이의 거리가 멀수록 높다 (다른 무리와는 다르게)'],
@@ -295,7 +295,7 @@ export async function PDF만들기(진행, { 미리보기 = false } = {}) {
   document.head.append(모양);
   document.body.append(틀);
   try {
-    const 쪽들 = [쪽1(), 쪽2(), 쪽3(), 쪽4(), 쪽5(), 쪽6()];
+    const 쪽들 = [쪽1(), 쪽2(), 쪽4(), 쪽3(), 쪽5(), 쪽6()];   // 유사성(거리) 쪽을 군집 분석의 종류보다 먼저
     틀.append(...쪽들);
     // 그림(img)이 다 읽힐 때까지 기다린다
     await Promise.all([...틀.querySelectorAll('img')].map(img => (img.complete ? null : new Promise(r => { img.onload = img.onerror = r; }))));

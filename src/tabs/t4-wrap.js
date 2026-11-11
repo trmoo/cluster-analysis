@@ -4,7 +4,7 @@ import { h, 채우기, 알림, 대화상자 } from '../lib/ui.js';
 import { 기록 } from '../lib/store.js';
 import { 확인문제, 정리빈칸, 정리낱말 } from '../data.js';
 import 탭0 from './t0-open.js';
-import 탭1 from './t1-cluster.js';
+import 탭1, { 종류탭 } from './t1-cluster.js';
 import 탭2 from './t2-similar.js';
 import 탭3 from './t3-eval.js';
 
@@ -99,7 +99,7 @@ function 핵심정리(el, 수명, 도구) {
 
 // ───────────────────────── 3. PDF 내려받기 ─────────────────────────
 function PDF(el, 수명, 도구) {
-  const 탭들 = [탭0, 탭1, 탭2, 탭3];
+  const 탭들 = [탭0, 탭1, 탭2, 종류탭, 탭3];
   const 전체 = 탭들.flatMap(t => t.카드.map(c => ({ 탭: t, c, 열쇠: `${t.id}/${c.id}` })))
     .concat([{ 탭: { 이름: '정리' }, c: { 제목: '확인 문제' }, 열쇠: 'wrap/quiz' }, { 탭: { 이름: '정리' }, c: { 제목: '핵심 정리' }, 열쇠: 'wrap/summary' }]);
   const 마친 = 전체.filter(x => 기록.완료됨(x.열쇠)).length;
@@ -131,7 +131,7 @@ function PDF(el, 수명, 도구) {
       h('div', { class: 'panel progress-list' }, 전체.map(x => h('div', { class: 기록.완료됨(x.열쇠) ? 'ok' : 'no' }, (기록.완료됨(x.열쇠) ? '✔ ' : '○ ') + `${x.탭.이름} · ${x.c.제목}`)))),
     h('div', { class: 'col grow' },
       h('h2', null, '전체 학습 내용 PDF'),
-      h('div', { class: 'panel', html: 'A4 6쪽으로 정리해 드려요.<br>① 표지·학습 목표·활동 현황 ② 생각 열기·군집 분석 개념·<b>내 군집화 그림</b> ③ <b>내 k-평균 결과</b>·계층적 군집 ④ 유사성과 상이성·<b>131쪽 실습 결과</b> ⑤ 실루엣 계수·엘보 방법·<b>내 실험 기록</b> ⑥ 확인 문제 결과·핵심 정리' }),
+      h('div', { class: 'panel', html: 'A4 6쪽으로 정리해 드려요.<br>① 표지·학습 목표·활동 현황 ② 생각 열기·군집 분석 개념·<b>내 군집화 그림</b> ③ 유사성과 상이성·<b>131쪽 실습 결과</b> ④ 군집 분석의 종류·계층적 군집·<b>내 k-평균 결과</b> ⑤ 실루엣 계수·엘보 방법·<b>내 실험 기록</b> ⑥ 확인 문제 결과·핵심 정리' }),
       h('div', { class: 'tip', html: '💡 아직 하지 않은 활동은 PDF 에 「아직 하지 않은 활동」으로 표시돼요. 이름·학번은 넣지 않아요 — 필요하면 출력한 뒤 손으로 적으세요.' }),
       단추, 진행, 상태,
       h('button', {
