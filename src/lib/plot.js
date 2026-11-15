@@ -76,7 +76,7 @@ export function 중심점(판, x, y, { fill = '#d32f2f', 빈 = false, 크기 = 1
 }
 export function 옮기기(el, 판, x, y) { el.setAttribute('transform', `translate(${판.sx(x)},${판.sy(y)})`); }
 
-/** 군집을 감싸는 둥근 영역 (교과서 그림의 색 타원처럼) */
+/** 군집을 감싸는 둥근 영역 (색 타원처럼) */
 export function 군집영역(판, 점목록, 채움, 두께 = 34) {
   if (!점목록.length) return s('g');
   if (점목록.length === 1) return s('circle', { cx: 판.sx(점목록[0][0]), cy: 판.sy(점목록[0][1]), r: 두께 / 2 + 4, fill: 채움, opacity: 0.22, class: 'hull' });

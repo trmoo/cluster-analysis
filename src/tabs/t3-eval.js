@@ -165,7 +165,7 @@ function 실루엣원리(el, 수명, 도구) {
   const 예시 = () => {
     const a = 실루엣예시.같은군집, b = 실루엣예시.가까운군집;
     const A = a.reduce((x, y) => x + y) / 3, B = b.reduce((x, y) => x + y) / 3;
-    대화상자('📕 교과서 예시 계산', h('div', { class: 'col' },
+    대화상자('📕 예시로 계산해 보기', h('div', { class: 'col' },
       h('div', { class: 'formula', html: `a(X) = (${a.join(' + ')}) / 3 = <b>${수(A, 2)}</b>` }),
       h('div', { class: 'formula', html: `b(X) = (${b.join(' + ')}) / 3 = <b>${수(B, 2)}</b>` }),
       h('div', { class: 'formula', html: `s(X) = (${수(B, 2)} − ${수(A, 2)}) / ${수(Math.max(A, B), 2)} = <b>${수((B - A) / Math.max(A, B), 3)}</b>` }),
@@ -174,7 +174,7 @@ function 실루엣원리(el, 수명, 도구) {
   el.append(
     h('div', { class: 'plot-box' }, 판.svg),
     h('div', { class: 'col grow' },
-      h('div', { class: 'row' }, h('h2', { style: { margin: 0 } }, '실루엣 계수 (Silhouette Coefficient)'), h('button', { class: 'btn sm', onClick: 예시 }, '📕 교과서 예시')),
+      h('div', { class: 'row' }, h('h2', { style: { margin: 0 } }, '실루엣 계수 (Silhouette Coefficient)'), h('button', { class: 'btn sm', onClick: 예시 }, '📕 예시로 계산')),
       h('p', { class: 'lead' }, '데이터 X 를 끌어 보세요. X 는 언제나 군집 A 소속이에요. 군집 내 평균 거리 a 와 가장 가까운 다른 군집과의 평균 거리 b 를 견주어요.'),
       계산칸, h('div', { class: 'panel' }, 도전칸)));
   그리기();
@@ -243,7 +243,7 @@ function 실루엣그래프(el, 수명, 도구) {
     막대.append(s('line', { x1: sx(0.5), x2: sx(0.5), y1: 위, y2: H - 아래, stroke: '#1e8e4e', 'stroke-width': 1.5, 'stroke-dasharray': '2 3' }));
     채우기(막대칸, 막대);
 
-    // 좋은 군집화의 조건 4가지 (교과서 133쪽)
+    // 좋은 군집화의 조건 4가지
     const 크기 = [...Array(k).keys()].map(g => r.이름표.filter(v => v === g).length);
     const 군집평균 = [...Array(k).keys()].map(g => { const m = 목록.filter((_, i) => r.이름표[i] === g); return m.reduce((t, x) => t + x.s, 0) / m.length; });
     const 조건 = [
