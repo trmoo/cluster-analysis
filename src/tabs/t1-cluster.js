@@ -872,7 +872,6 @@ function 사차원실험(el, 수명, 도구) {
   const 이점 = 성적.map(r => [r.국어, r.수학]);
   const 저장 = 기록.get('k평균4d', null);
   let k = Math.min(4, 저장?.k ?? 3), 고른 = -1, 평균선 = true;   // 학생 10명이라 k 는 2~4 (5 이면 한두 명짜리 군집뿐)
-  let 특징 = 저장?.특징 ?? {};               // 「k,군집」 → 적은 글
   const 판칸 = h('div', { class: 'plot-box' });
   const 군집칸 = h('div', { class: 'col', style: { gap: '6px' } });
   const 정보 = h('div', { class: 'fb info' });
@@ -929,17 +928,13 @@ function 사차원실험(el, 수명, 도구) {
     svg.append(s('text', { x: 8, y: 24, class: 'axis-name' }, '점수'));
     채우기(판칸, svg);
 
-    // 오른쪽 — 군집마다 학생 · 네 과목 평균 · 내가 적는 특징
+    // 오른쪽 — 군집마다 학생 · 네 과목 평균 (특징 적기 칸은 한 차시 분량 때문에 뺐다, 2026-11-15)
     채우기(군집칸, r.중심.map((c, g) => {
-      const 열쇠 = `${k},${g}`;
       const 학생 = r.이름표.map((v, i) => (v === g ? i + 1 : null)).filter(Boolean);
       return h('div', { class: 'row', style: { gap: '8px', alignItems: 'center' } },
         h('span', { class: 'badge', style: { background: 색[g], color: '#fff', minWidth: '64px', textAlign: 'center' } }, `군집 ${g + 1}`),
-        h('div', { style: { width: '230px', fontSize: '13.5px', lineHeight: 1.35 } },
-          h('div', null, h('b', null, '학생 '), 학생.join(', ')),
-          h('div', { class: 'muted' }, 과목.map((과, j) => `${과[0]} ${Math.round(c[j])}`).join(' · '))),
-        h('input', { class: 'txt grow', style: { padding: '4px 9px', fontSize: '15px' }, placeholder: '이 군집의 특징 (예: 정보만 높음)', value: 특징[열쇠] || '',
-          onInput: e => { 특징[열쇠] = e.target.value; 확인(r); } }));
+        h('span', { style: { fontSize: '15px', width: '170px' } }, h('b', null, '학생 '), 학생.join(', ')),
+        h('span', { class: 'muted', style: { fontSize: '14.5px' } }, 과목.map((과, j) => `${과} ${Math.round(c[j])}`).join(' · ')));
     }));
     if (고른 >= 0) {
       const p = 점들[고른], g = r.이름표[고른];
@@ -949,11 +944,12 @@ function 사차원실험(el, 수명, 도구) {
     확인(r);
   }
 
-  // 지금 k 의 군집마다 특징을 4글자 넘게 적으면 완료
+  // 학생 선을 하나라도 눌러 보면 완료 (선 모양으로 군집을 읽어 보는 것이 이 카드의 목표)
+  let 눌러봄 = !!저장?.눌러봄;
   function 확인(r) {
-    기록.set('k평균4d', { k, 이름표: r.이름표, 중심: r.중심, 특징, 실: r.실, 같음: r.같음 });
-    const 다 = r.중심.every((_, g) => (특징[`${k},${g}`] || '').replace(/\s/g, '').length >= 4);
-    if (다) 도구.완료();
+    if (고른 >= 0) 눌러봄 = true;
+    기록.set('k평균4d', { k, 이름표: r.이름표, 중심: r.중심, 실: r.실, 같음: r.같음, 눌러봄 });
+    if (눌러봄) 도구.완료();
   }
 
   function 조절그리기() {
@@ -971,7 +967,7 @@ function 사차원실험(el, 수명, 도구) {
         '그래서 <b>세로줄 4개를 나란히</b> 세우고 학생 한 명을 <b>꺾은선 하나</b>로 그려요. 같은 색 선끼리 모양이 닮았으면 같은 군집이에요.<br>' +
         '거리 공식은 항이 하나 더 붙을 뿐 — d = √(국어 차² + 수학 차² + 정보 차² + 과학 차²)' }),
       조절, 군집칸, 정보, 견줌,
-      h('div', { class: 'muted', style: { fontSize: '13.5px' } }, '✏️ 군집마다 특징을 적으면 완료돼요. 컴퓨터는 묶기만 하고, 「무엇이 닮았는지」는 사람이 선 모양을 보고 말해요.')),
+      h('div', { class: 'muted', style: { fontSize: '13.5px' } }, '💬 같은 색 선들은 어느 과목에서 함께 오르내리나요? 컴퓨터는 묶기만 하고, 「무엇이 닮았는지」는 사람이 선 모양을 보고 말해요. (선을 하나 눌러 보면 완료)')),
   );
   조절그리기();
   그리기();
