@@ -1,6 +1,6 @@
 /*! 군집 분석 실험실 — © 2026 티쳐무 · 모든 권리 보유 */
 // 탭 4 정리 — 확인 문제 · 핵심 정리 빈칸 · 전체 학습 내용 PDF 내려받기
-import { h, 채우기, 알림, 대화상자 } from '../lib/ui.js';
+import { h, 채우기, 알림 } from '../lib/ui.js';
 import { 기록 } from '../lib/store.js';
 import { 확인문제, 정리빈칸, 정리낱말 } from '../data.js';
 import 탭0 from './t0-open.js';
@@ -133,12 +133,7 @@ function PDF(el, 수명, 도구) {
       h('h2', null, '전체 학습 내용 PDF'),
       h('div', { class: 'panel', html: 'A4 6쪽으로 정리해 드려요.<br>① 표지·학습 목표·활동 현황 ② 생각 열기·군집 분석 개념·<b>내 군집화 그림</b> ③ 유사성과 상이성·<b>131쪽 실습 결과</b> ④ 군집 분석의 종류·계층적 군집·<b>내 k-평균 결과</b> ⑤ 실루엣 계수·엘보 방법·<b>내 실험 기록</b> ⑥ 확인 문제 결과·핵심 정리' }),
       h('div', { class: 'tip', html: '💡 아직 하지 않은 활동은 PDF 에 「아직 하지 않은 활동」으로 표시돼요. 이름·학번은 넣지 않아요 — 필요하면 출력한 뒤 손으로 적으세요.' }),
-      단추, 진행, 상태,
-      h('button', {
-        class: 'btn sm warn', style: { alignSelf: 'flex-start', marginTop: 'auto' },
-        onClick: () => 대화상자('내 기록을 지울까요?', '이 컴퓨터의 이 창에 남은 활동 기록이 모두 지워져요. 다음 학생이 쓰기 전에 누르세요.', [
-          { 글: '그만두기' }, { 글: '모두 지우기', 주: true, 할일: () => { 기록.지우기(); location.hash = '#open/learn'; location.reload(); } }]),
-      }, '🧹 내 기록 모두 지우기 (공용 컴퓨터)')),
+      단추, 진행, 상태),
   );
 }
 
