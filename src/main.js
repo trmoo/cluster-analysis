@@ -38,6 +38,14 @@ const 뒤단추 = h('button', { class: 'nav-btn', title: '다음 (→)', onClick
 // 수업이 도중에 끝나면 → 이어하기 파일, 다 했으면 → 전체 활동 PDF (어느 화면에서나 누를 수 있게 카드 줄 오른쪽에 둔다)
 const 이어단추 = h('button', { class: 'btn sm sub-act', title: '지금까지 한 활동을 HTML 파일로 내려받아요', onClick: () => 이어하기저장(location.hash) }, '💾 다음 시간에 이어하기');
 const 완료단추 = h('button', { class: 'btn sm primary sub-act', title: '전체 활동 과정을 PDF 로 내려받아요', onClick: () => 완료하기() }, '🏁 군집 분석 실험실 완료');
+// 다른 반 수업 전에 — 이 창(sessionStorage)에 남은 활동 기록을 모두 지우고 처음 화면으로
+const 지우기단추 = h('button', {
+  class: 'foot-clear', title: '이 창에 남은 활동 기록을 모두 지워요 (다른 반 수업 전에)',
+  onClick: () => 대화상자('🧹 활동 기록을 모두 지울까요?',
+    '이 창에 남은 활동 기록(군집화 그림·실습 답·확인 문제·완료 표시)이 모두 지워지고 처음 화면으로 돌아가요. 다른 반 수업이나 다음 학생이 쓰기 전에 누르세요. 되돌릴 수 없어요.', [
+      { 글: '그만두기' },
+      { 글: '모두 지우기', 주: true, 할일: () => { 기록.지우기(); location.hash = '#open/learn'; location.reload(); } }]),
+}, '🧹 활동 기록 지우기 (다른 반 수업 전에)');
 무대.append(
   h('header', { class: 'top' },
     h('div', { class: 'brand' }, h('span', { class: 'dots' }, h('i'), h('i'), h('i')), '군집 분석 실험실'),
@@ -46,6 +54,7 @@ const 완료단추 = h('button', { class: 'btn sm primary sub-act', title: '전�
   본문,
   h('footer', { class: 'foot' },
     h('span', null, '「데이터 과학」 Ⅲ. 군집 분석 모델의 개념 · ← → 키로 넘기기'),
+    지우기단추,
     h('span', null, '© 2026 티쳐무 · 모든 권리 보유 · 학교 수업 목적으로만 이용해 주세요')),
 );
 
