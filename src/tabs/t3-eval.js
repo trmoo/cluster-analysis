@@ -1,5 +1,5 @@
 /*! 군집 분석 실험실 — © 2026 티쳐무 · 모든 권리 보유 */
-// 탭 3 군집 분석 결과 평가 — 실루엣 계수 원리 · 실루엣 그래프 · 엘보 방법 · 최적 k 실험실
+// 탭 3 군집 분석 결과 평가 — 실루엣 계수 원리 · 실루엣 점수 · 실루엣 그래프 · 엘보 방법 · 최적 k 실험실
 import { h, 채우기, s, 수, 알림, 고르기단추, 슬라이더, 대화상자 } from '../lib/ui.js';
 import { 기록 } from '../lib/store.js';
 import { 좌표판, 점, 중심점, 군집영역, 선, 꺾은선, 색, 회색, 보기좋은축 } from '../lib/plot.js';
@@ -24,41 +24,75 @@ function 수직선(값) {
 }
 const 해석 = v => (v >= 0.5 ? ['자기 군집에 잘 어울려요 (1에 가까움)', 'ok'] : v >= 0 ? ['군집의 경계에 걸친 애매한 상태예요 (0에 가까움)', 'info'] : ['다른 군집에 더 가까워요 — 잘못 묶인 상태 (음수)', 'bad']);
 
-/** 「실루엣 계수」와 「실루엣 점수」는 무엇이 다를까 — 고1 눈높이 설명 창 */
-function 계수점수설명() {
+/** 「실루엣 계수」와 「실루엣 점수」는 무엇이 다를까 — 고1 눈높이 (2026-11-15 설명 창 → 카드로) */
+function 실루엣점수카드(el, 수명, 도구) {
   const 예 = [0.8, 0.6, -0.2];
   const 평균 = 예.reduce((t, v) => t + v, 0) / 예.length;
-  const 막대들 = h('div', { class: 'col', style: { gap: '4px' } },
-    예.map((v, i) => h('div', { class: 'row', style: { gap: '8px', fontSize: '15px' } },
+  const 막대들 = h('div', { class: 'col', style: { gap: '6px', flex: 'none' } },
+    예.map((v, i) => h('div', { class: 'row', style: { gap: '8px', fontSize: '16px' } },
       h('span', { style: { width: '64px' } }, `학생 ${i + 1}`),
-      h('span', { style: { display: 'inline-block', height: '14px', width: Math.abs(v) * 160 + 'px', background: v < 0 ? '#e57373' : '#4db6ac', borderRadius: '3px' } }),
+      h('span', { style: { display: 'inline-block', height: '15px', width: Math.abs(v) * 170 + 'px', background: v < 0 ? '#e57373' : '#4db6ac', borderRadius: '3px' } }),
       h('b', null, `계수 ${수(v, 1)}`))),
-    h('div', { style: { fontSize: '15px', color: '#d32f2f', fontWeight: 800 } }, `→ 평균 (0.8 + 0.6 − 0.2) ÷ 3 = ${수(평균, 1)}`),
-    h('div', { style: { fontSize: '15px', color: '#d32f2f', fontWeight: 800 } }, '　 ↑ 이것이 실루엣 점수'));
+    h('div', { style: { fontSize: '16px', color: '#d32f2f', fontWeight: 800 } }, `→ 평균 (0.8 + 0.6 − 0.2) ÷ 3 = ${수(평균, 1)}`),
+    h('div', { style: { fontSize: '16px', color: '#d32f2f', fontWeight: 800 } }, '　 ↑ 이것이 실루엣 점수'));
   const 줄 = (이름, 계수, 점수) => h('tr', null, h('th', null, 이름), h('td', null, 계수), h('td', null, 점수));
-  const 본문 = h('div', { class: 'col', style: { gap: '8px', fontSize: '15px' } },
-    h('div', { class: 'panel', style: { padding: '8px 12px' }, html:
-      '🏫 <b>모둠 활동</b>으로 생각해 봐요. 선생님이 반을 모둠으로 나눈 뒤 한 사람씩 물어요.<br>' +
-      '「너는 <b>지금 모둠</b>이 <b>옆 모둠</b>보다 더 잘 맞니?」<br>' +
-      '· 한 사람 한 사람의 대답 = <b>실루엣 계수</b> (사람 수만큼 있다)<br>' +
-      '· 반 전체 대답의 <b>평균</b> = <b>실루엣 점수</b> (이번 모둠 나누기에 매긴 성적표, 딱 하나)' }),
-    h('div', { class: 'row', style: { gap: '14px', alignItems: 'flex-start' } },
-    막대들,
-    h('table', { class: 'grid', style: { fontSize: '14px', flex: 1 } },
-      h('tr', null, h('th', null, ''), h('th', null, '실루엣 계수 s(i)'), h('th', null, '실루엣 점수')),
-      줄('누구에게?', '데이터 하나하나에', '군집화 결과 전체에'),
-      줄('몇 개?', '데이터 개수만큼', '딱 하나'),
-      줄('어떻게 구해?', '(b − a) ÷ (a, b 중 큰 값)', '모든 계수의 평균'),
-      줄('무엇을 알려 줘?', '이 점이 제 군집에 잘 들어갔나', '이렇게 나눈 것이 전체로 잘 됐나'),
-      줄('어디에 써?', '잘못 묶인 점(음수) 찾기', '가장 알맞은 k 고르기'),
-      줄('그래프에서는?', '막대 하나하나', '빨간 점선 하나'))),
-    h('div', { class: 'tip', style: { fontSize: '14.5px' }, html:
-      '⚠ 점수(평균)가 높아도 <b>음수인 점</b>이 숨어 있을 수 있어요. 평균만 보면 안 보이니까 ' +
-      '실루엣 그래프로 <b>막대(계수)와 점선(점수)을 함께</b> 봐요.<br>' +
-      '📌 책이나 프로그램에 따라 둘 다 그냥 「실루엣 계수」라고 부르기도 해요. 「점 하나의 값인가, 전체 평균인가」만 구분하면 돼요.' }));
-  대화상자('🤔 실루엣 계수 vs 실루엣 점수', 본문);
-  const 창 = 본문.closest('.modal');
-  if (창) 창.style.width = '880px';   // 표와 예시를 나란히 두려고 이 창만 넓힌다
+
+  // 확인 — 「계수」일까 「점수」일까? 넷 다 맞히면 완료
+  const 문항 = [
+    { 글: '학생 한 명이 지금 모둠에 잘 맞는지 나타내는 값', 답: '계수' },
+    { 글: '모둠 나누기 전체가 잘 됐는지 나타내는 값 하나', 답: '점수' },
+    { 글: '음수인 값을 찾아 잘못 묶인 데이터를 가려낸다', 답: '계수' },
+    { 글: 'k 를 2, 3, 4 … 로 바꿔 가며 가장 높은 k 를 고른다', 답: '점수' },
+  ];
+  const 맞음 = 기록.get('실루엣점수확인', 문항.map(() => false));
+  const 확인칸 = h('div', { class: 'col', style: { gap: '6px' } });
+  const 피드백 = h('div', { class: 'fb' });
+  function 확인그리기() {
+    채우기(확인칸, 문항.map((q, i) => h('div', { class: 'row', style: { gap: '8px', fontSize: '15.5px' } },
+      h('span', { style: { width: '22px' } }, 맞음[i] ? '✅' : '⬜'),
+      h('span', { class: 'grow' }, q.글),
+      ['계수', '점수'].map(답 => h('button', {
+        class: 'btn sm' + (맞음[i] && q.답 === 답 ? ' primary' : ''),
+        onClick: () => {
+          if (답 === q.답) {
+            맞음[i] = true;
+            알림(피드백, `⭕ ${i + 1}번은 <b>실루엣 ${답}</b>예요. ${답 === '계수' ? '데이터 하나하나에 매기는 값이니까요.' : '군집화 결과 전체에 하나뿐인 평균이니까요.'}`, 'ok');
+          } else 알림(피드백, `❌ ${i + 1}번을 다시 생각해 봐요. 데이터 <b>하나</b>의 값인가요, <b>전체</b>의 평균인가요?`, 'bad');
+          기록.set('실루엣점수확인', 맞음);
+          if (맞음.every(Boolean)) 도구.완료();
+          확인그리기();
+        },
+      }, 답)))));
+  }
+
+  el.append(
+    h('div', { class: 'col grow', style: { gap: '10px' } },
+      h('h2', { style: { margin: 0 } }, '🤔 실루엣 계수 vs 실루엣 점수'),
+      h('div', { class: 'row', style: { gap: '16px', alignItems: 'flex-start' } },
+        h('div', { class: 'col', style: { gap: '10px', width: '520px', flex: 'none' } },
+          h('div', { class: 'panel', style: { fontSize: '16px' }, html:
+            '🏫 <b>모둠 활동</b>으로 생각해 봐요. 선생님이 반을 모둠으로 나눈 뒤 한 사람씩 물어요.<br>' +
+            '「너는 <b>지금 모둠</b>이 <b>옆 모둠</b>보다 더 잘 맞니?」<br>' +
+            '· 한 사람 한 사람의 대답 = <b>실루엣 계수</b> (사람 수만큼 있다)<br>' +
+            '· 반 전체 대답의 <b>평균</b> = <b>실루엣 점수</b> (이번 모둠 나누기에 매긴 성적표, 딱 하나)' }),
+          h('div', { class: 'panel col', style: { gap: '6px' } }, h('b', null, '✏️ 확인 — 계수일까, 점수일까?'), 확인칸),
+          피드백),
+        h('div', { class: 'col grow', style: { gap: '10px' } },
+          h('table', { class: 'grid', style: { fontSize: '15px', width: '100%' } },
+            h('tr', null, h('th', null, ''), h('th', null, '실루엣 계수 s(i)'), h('th', null, '실루엣 점수')),
+            줄('누구에게?', '데이터 하나하나에', '군집화 결과 전체에'),
+            줄('몇 개?', '데이터 개수만큼', '딱 하나'),
+            줄('어떻게 구해?', '(b − a) ÷ (a, b 중 큰 값)', '모든 계수의 평균'),
+            줄('무엇을 알려 줘?', '이 점이 제 군집에 잘 들어갔나', '이렇게 나눈 것이 전체로 잘 됐나'),
+            줄('어디에 써?', '잘못 묶인 점(음수) 찾기', '가장 알맞은 k 고르기'),
+            줄('그래프에서는?', '막대 하나하나', '빨간 점선 하나')),
+          막대들,
+          h('div', { class: 'tip', style: { fontSize: '15px' }, html:
+            '⚠ 점수(평균)가 높아도 <b>음수인 점</b>이 숨어 있을 수 있어요. 평균만 보면 안 보이니까 ' +
+            '다음 카드의 실루엣 그래프로 <b>막대(계수)와 점선(점수)을 함께</b> 봐요.<br>' +
+            '📌 책이나 프로그램에 따라 둘 다 그냥 「실루엣 계수」라고 부르기도 해요. 「점 하나의 값인가, 전체 평균인가」만 구분하면 돼요.' })))));
+  확인그리기();
+  if (맞음.every(Boolean)) 도구.완료();
 }
 
 // ───────────────────────── 1. 실루엣 계수의 원리 ─────────────────────────
@@ -140,7 +174,7 @@ function 실루엣원리(el, 수명, 도구) {
   el.append(
     h('div', { class: 'plot-box' }, 판.svg),
     h('div', { class: 'col grow' },
-      h('div', { class: 'row' }, h('h2', { style: { margin: 0 } }, '실루엣 계수 (Silhouette Coefficient)'), h('button', { class: 'btn sm', onClick: 예시 }, '📕 교과서 예시'), h('button', { class: 'btn sm', onClick: 계수점수설명 }, '🤔 계수 vs 점수')),
+      h('div', { class: 'row' }, h('h2', { style: { margin: 0 } }, '실루엣 계수 (Silhouette Coefficient)'), h('button', { class: 'btn sm', onClick: 예시 }, '📕 교과서 예시')),
       h('p', { class: 'lead' }, '데이터 X 를 끌어 보세요. X 는 언제나 군집 A 소속이에요. 군집 내 평균 거리 a 와 가장 가까운 다른 군집과의 평균 거리 b 를 견주어요.'),
       계산칸, h('div', { class: 'panel' }, 도전칸)));
   그리기();
@@ -233,7 +267,7 @@ function 실루엣그래프(el, 수명, 도구) {
       h('div', { class: 'row' }, h('b', null, '군집 수 k'), 고르기단추([2, 3, 4, 5, 6].map(v => ({ 값: v, 글: v })), k, v => { k = v; 고른점 = -1; 그리기(); })),
       왼칸),
     h('div', { class: 'col grow' },
-      h('div', { class: 'row' }, h('h2', { style: { margin: 0 } }, '실루엣 그래프로 군집 평가하기'), h('button', { class: 'btn sm', onClick: 계수점수설명 }, '🤔 계수 vs 점수')),
+      h('div', { class: 'row' }, h('h2', { style: { margin: 0 } }, '실루엣 그래프로 군집 평가하기')),
       막대칸,
       h('div', { class: 'panel col', style: { gap: '6px' } }, 조건칸, 정보)));
   그리기();
@@ -363,6 +397,7 @@ export default {
   id: 'eval', 이름: '군집 평가', 아이콘: '📊',
   카드: [
     { id: 'sil', 제목: '실루엣 계수', 그리기: 실루엣원리 },
+    { id: 'silscore', 제목: '실루엣 점수', 그리기: 실루엣점수카드 },
     { id: 'silplot', 제목: '실루엣 그래프', 그리기: 실루엣그래프 },
     { id: 'elbow', 제목: '엘보 방법', 그리기: 엘보 },
     { id: 'bestk', 제목: '최적의 k 실험실', 그리기: 최적k },
