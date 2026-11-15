@@ -7,7 +7,7 @@ import { 성적, 과목, 성적점, 예시군집, 종류분류, 삼차원과목,
 import { 삼차원판, 보기들 } from '../lib/three-plot.js';
 import {
   거리, 배정, 중심갱신, 응집도, k평균, 최선k평균, 무작위중심, 난수, 덩어리, 가까운중심,
-  계층군집, 묶음까지, 잎차례, 같은정도, 군집사이거리,
+  계층군집, 묶음까지, 잎차례, 같은정도, 군집사이거리, 실루엣점수,
 } from '../lib/cluster.js';
 
 // ───────────────────────── 1. 군집 분석이란? ─────────────────────────
@@ -135,10 +135,10 @@ function 개념(el, 수명, 도구) {
 }
 
 // ───────────────────────── 2. 성적 데이터 손으로 군집화 ─────────────────────────
-// 카드 안을 네 단계로 나눈다 — ① 교과서 예시를 먼저 읽고 ② 축·군집 수를 정해 내가 묶고
+// 카드 안을 네 단계로 나눈다 — ① 예시를 먼저 읽고 ② 축·군집 수를 정해 내가 묶고
 // ③ 군집마다 특징을 말로 적은 뒤 ④ 컴퓨터(k-평균)와 견준다. 앞 단계를 마쳐야 다음 단계가 열린다.
 const 손단계 = [
-  { id: '예', 글: '① 교과서 예시' },
+  { id: '예', 글: '① 예시 보기' },
   { id: '나', 글: '② 내가 묶기' },
   { id: '특징', 글: '③ 특징 적기' },
   { id: '컴', 글: '④ k-평균 비교' },
@@ -256,7 +256,7 @@ function 손군집(el, 수명, 도구) {
     let 본문;
     if (단계 === '예') {
       본문 = h('div', { class: 'panel col' },
-        h('b', null, '📖 교과서는 이렇게 묶었어요'),
+        h('b', null, '📖 예시 — 이렇게 묶을 수 있어요'),
         h('div', { class: 'row' }, h('span', { class: 'chip' }, '축: 가로 국어 · 세로 수학'), h('span', { class: 'chip' }, '군집 수: 3개')),
         ...예시군집.기준.map((t, g) => h('div', { class: 'row', style: { flexWrap: 'nowrap', alignItems: 'flex-start' } },
           h('span', { class: 'badge', style: { background: 색[g], color: '#fff', flex: 'none' } }, '군집 ' + (g + 1)),
@@ -294,7 +294,7 @@ function 손군집(el, 수명, 도구) {
             h('span', { class: 'badge', style: { background: 색[g], color: '#fff', flex: 'none' } }, '군집 ' + (g + 1)),
             h('span', { class: 'muted', style: { fontSize: '14px' } }, 군집요약(g).글)),
           h('input', { class: 'txt', style: 좁게 ? { padding: '4px 10px' } : {}, placeholder: '예) 수학·과학 모두 높은 학생', value: 기준[g] || '', onInput: e => { 기준[g] = e.target.value; 저장하기(); 검사(); 조절막대(); } }))),
-        좁게 ? null : h('div', { class: 'tip', html: '💡 평균을 보고 <b>높음 · 중간 · 낮음</b>으로 말해 보세요. 교과서처럼 「수학 성적이 높은 학생」이면 충분해요.' }),
+        좁게 ? null : h('div', { class: 'tip', html: '💡 평균을 보고 <b>높음 · 중간 · 낮음</b>으로 말해 보세요. 예시처럼 「수학 성적이 높은 학생」이면 충분해요.' }),
         조절다음);
       조절막대();
     } else {
@@ -315,7 +315,7 @@ function 손군집(el, 수명, 도구) {
   el.append(
     h('div', { class: 'col', style: { width: '330px' } },
       h('h2', null, '✍️ 스스로 실습: 군집화하기'),
-      h('p', { class: 'lead' }, '교과서 예시를 먼저 보고, 축과 군집 수를 정해 직접 묶은 뒤 특징을 말해 보세요.'),
+      h('p', { class: 'lead' }, '예시를 먼저 보고, 축과 군집 수를 정해 직접 묶은 뒤 특징을 말해 보세요.'),
       표칸),
     판칸, 조절);
   if (!열림(단계)) 단계 = '나';
@@ -864,6 +864,119 @@ function 계층(el, 수명, 도구) {
   그리기();
 }
 
+// ───────────────────────── 7. 4차원 군집 — 평행 좌표 그림 ─────────────────────────
+// 과목이 넷이면 점은 4차원에 놓여 그릴 수 없다. 세로줄(축) 4개를 나란히 세우고 학생 한 명을 꺾은선 하나로 그린다.
+// 거리 공식에 항이 하나 더 붙을 뿐 k-평균은 똑같이 돈다 — 3차원 카드 다음에 「눈으로 못 볼 때는?」 을 다룬다.
+function 사차원실험(el, 수명, 도구) {
+  const 점들 = 성적.map(r => 과목.map(과 => r[과]));
+  const 이점 = 성적.map(r => [r.국어, r.수학]);
+  const 저장 = 기록.get('k평균4d', null);
+  let k = Math.min(4, 저장?.k ?? 3), 고른 = -1, 평균선 = true;   // 학생 10명이라 k 는 2~4 (5 이면 한두 명짜리 군집뿐)
+  let 특징 = 저장?.특징 ?? {};               // 「k,군집」 → 적은 글
+  const 판칸 = h('div', { class: 'plot-box' });
+  const 군집칸 = h('div', { class: 'col', style: { gap: '6px' } });
+  const 정보 = h('div', { class: 'fb info' });
+  const 견줌 = h('div', { class: 'muted', style: { fontSize: '14.5px' } });
+  const 조절 = h('div', { class: 'row' });
+
+  const W = 640, H = 540, 위 = 46, 아래 = 470, 축x = [150, 300, 450, 600];
+  const sy = v => 아래 - (v / 100) * (아래 - 위);
+
+  function 결과() {
+    const r = 최선k평균(점들, k);
+    const 이 = 최선k평균(이점, k);
+    return { ...r, 실: 실루엣점수(점들, r.이름표), 같음: 같은정도(r.이름표, 이.이름표) };
+  }
+
+  function 그리기() {
+    const r = 결과();
+    const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, width: W, height: H, class: 'plot' });
+    // 눈금 (가로 격자)
+    for (const v of [0, 25, 50, 75, 100]) {
+      svg.append(s('line', { x1: 축x[0], x2: 축x[3], y1: sy(v), y2: sy(v), class: 'grid' }));
+      svg.append(s('text', { x: 축x[3] + 10, y: sy(v) + 4, class: 'tick' }, v));
+    }
+    // 세로줄 4개 = 과목 4개
+    축x.forEach((x, j) => {
+      svg.append(s('line', { x1: x, x2: x, y1: 위 - 8, y2: 아래, stroke: '#4b5563', 'stroke-width': 2.5 }));
+      svg.append(s('text', { x, y: 아래 + 30, 'text-anchor': 'middle', 'font-size': 19, 'font-weight': 800, fill: '#1f6f5c' }, 과목[j]));
+    });
+    const 선 = (값들, 속성) => s('polyline', { points: 값들.map((v, j) => `${축x[j]},${sy(v)}`).join(' '), fill: 'none', 'stroke-linejoin': 'round', ...속성 });
+    // 학생 꺾은선 — 고른 학생이 있으면 나머지는 흐리게
+    점들.forEach((p, i) => {
+      const 흐림 = 고른 >= 0 && 고른 !== i;
+      svg.append(선(p, { stroke: 색[r.이름표[i]], 'stroke-width': 고른 === i ? 5 : 2.5, opacity: 흐림 ? 0.18 : 0.85 }));
+      const 잡이 = 선(p, { stroke: 'transparent', 'stroke-width': 16, style: 'cursor:pointer' });
+      잡이.addEventListener('click', () => { 고른 = 고른 === i ? -1 : i; 그리기(); });
+      svg.append(잡이);
+      if (!흐림) p.forEach((v, j) => svg.append(s('circle', { cx: 축x[j], cy: sy(v), r: 고른 === i ? 6 : 4, fill: 색[r.이름표[i]] })));
+    });
+    // 군집 평균(중심점) — 굵은 점선
+    if (평균선) r.중심.forEach((c, g) => svg.append(선(c, { stroke: 색[g], 'stroke-width': 5, 'stroke-dasharray': '10 6', opacity: 고른 >= 0 ? 0.35 : 1 })));
+    // 학생 번호표 — 국어 축 왼쪽, 겹치지 않게 아래로 밀어 놓고 짧은 선으로 잇는다
+    const 표들 = 점들.map((p, i) => ({ i, y: sy(p[0]) })).sort((a, b) => a.y - b.y);
+    let 앞 = -Infinity;
+    표들.forEach(t => {
+      const y = Math.max(t.y, 앞 + 24); 앞 = y;
+      const i = t.i, x = 축x[0] - 62;
+      svg.append(s('line', { x1: x + 12, y1: y, x2: 축x[0], y2: t.y, stroke: 색[r.이름표[i]], 'stroke-width': 1.5, opacity: 0.6 }));
+      const g = s('g', { style: 'cursor:pointer', opacity: 고른 >= 0 && 고른 !== i ? 0.3 : 1 });
+      g.append(s('circle', { cx: x, cy: y, r: 11, fill: 색[r.이름표[i]] }),
+        s('text', { x, y: y + 4, 'text-anchor': 'middle', fill: '#fff', class: 'pt-label', 'font-size': 12 }, i + 1));
+      g.addEventListener('click', () => { 고른 = 고른 === i ? -1 : i; 그리기(); });
+      svg.append(g);
+    });
+    svg.append(s('text', { x: 8, y: 24, class: 'axis-name' }, '점수'));
+    채우기(판칸, svg);
+
+    // 오른쪽 — 군집마다 학생 · 네 과목 평균 · 내가 적는 특징
+    채우기(군집칸, r.중심.map((c, g) => {
+      const 열쇠 = `${k},${g}`;
+      const 학생 = r.이름표.map((v, i) => (v === g ? i + 1 : null)).filter(Boolean);
+      return h('div', { class: 'row', style: { gap: '8px', alignItems: 'center' } },
+        h('span', { class: 'badge', style: { background: 색[g], color: '#fff', minWidth: '64px', textAlign: 'center' } }, `군집 ${g + 1}`),
+        h('div', { style: { width: '230px', fontSize: '13.5px', lineHeight: 1.35 } },
+          h('div', null, h('b', null, '학생 '), 학생.join(', ')),
+          h('div', { class: 'muted' }, 과목.map((과, j) => `${과[0]} ${Math.round(c[j])}`).join(' · '))),
+        h('input', { class: 'txt grow', style: { padding: '4px 9px', fontSize: '15px' }, placeholder: '이 군집의 특징 (예: 정보만 높음)', value: 특징[열쇠] || '',
+          onInput: e => { 특징[열쇠] = e.target.value; 확인(r); } }));
+    }));
+    if (고른 >= 0) {
+      const p = 점들[고른], g = r.이름표[고른];
+      채우기(정보, h('span', { html: `<b>${고른 + 1}번</b> 학생: ${과목.map((과, j) => `${과} ${p[j]}`).join(' · ')} → <b style="color:${색[g]}">군집 ${g + 1}</b> (군집 평균까지의 4차원 거리 ${수(거리(p, r.중심[g]), 1)})` }));
+    } else 채우기(정보, '👆 선이나 번호를 누르면 그 학생의 네 과목 점수와, 군집 평균(굵은 점선)까지의 4차원 거리를 보여 줘요.');
+    채우기(견줌, h('span', { html: `📐 이 결과의 실루엣 점수 <b>${수(r.실, 2)}</b> · 국어·수학 <b>두 과목만</b>으로 k = ${k} 묶으면 4과목 결과와 같은 정도 <b>${Math.round(r.같음 * 100)}%</b> — 속성을 더하면 군집이 달라질 수 있어요.` }));
+    확인(r);
+  }
+
+  // 지금 k 의 군집마다 특징을 4글자 넘게 적으면 완료
+  function 확인(r) {
+    기록.set('k평균4d', { k, 이름표: r.이름표, 중심: r.중심, 특징, 실: r.실, 같음: r.같음 });
+    const 다 = r.중심.every((_, g) => (특징[`${k},${g}`] || '').replace(/\s/g, '').length >= 4);
+    if (다) 도구.완료();
+  }
+
+  function 조절그리기() {
+    채우기(조절,
+      h('b', null, 'k ='), 고르기단추([2, 3, 4].map(v => ({ 값: v, 글: v })), k, v => { k = v; 고른 = -1; 그리기(); }),
+      h('button', { class: 'btn sm' + (평균선 ? ' primary' : ''), onClick: () => { 평균선 = !평균선; 조절그리기(); 그리기(); } }, '군집 평균선 (굵은 점선)'));
+  }
+
+  el.append(
+    판칸,
+    h('div', { class: 'col grow', style: { gap: '8px' } },
+      h('h2', { style: { margin: 0 } }, '🧵 4차원 군집 — 평행 좌표 그림'),
+      h('div', { class: 'panel', style: { fontSize: '15px', lineHeight: 1.5, padding: '8px 12px' }, html:
+        '학생 한 명 = (국어, 수학, 정보, 과학) 숫자 4개 → <b>4차원</b>의 점이에요. 축 4개를 서로 직각으로 세울 수 없으니 그대로는 그릴 수 없어요.<br>' +
+        '그래서 <b>세로줄 4개를 나란히</b> 세우고 학생 한 명을 <b>꺾은선 하나</b>로 그려요. 같은 색 선끼리 모양이 닮았으면 같은 군집이에요.<br>' +
+        '거리 공식은 항이 하나 더 붙을 뿐 — d = √(국어 차² + 수학 차² + 정보 차² + 과학 차²)' }),
+      조절, 군집칸, 정보, 견줌,
+      h('div', { class: 'muted', style: { fontSize: '13.5px' } }, '✏️ 군집마다 특징을 적으면 완료돼요. 컴퓨터는 묶기만 하고, 「무엇이 닮았는지」는 사람이 선 모양을 보고 말해요.')),
+  );
+  조절그리기();
+  그리기();
+}
+
 // 차례: 군집 분석이란? → 손으로 묶기 → (탭 「유사성과 상이성」에서 거리를 배운 뒤) → 군집 분석의 종류
 // 계층적·k-평균은 「거리」를 알아야 이해되므로 유사성 탭 뒤의 별도 탭으로 둔다 (2026-11-11 사용자 지시)
 export default {
@@ -881,5 +994,6 @@ export const 종류탭 = {
     { id: 'hier', 제목: '계층적 군집', 그리기: 계층 },
     { id: 'kmeans', 제목: 'k-평균 시뮬레이터', 그리기: k평균실험 },
     { id: 'kmeans3d', 제목: '3차원 k-평균', 그리기: 삼차원실험 },
+    { id: 'kmeans4d', 제목: '4차원 평행 좌표', 그리기: 사차원실험 },
   ],
 };

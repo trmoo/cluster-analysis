@@ -156,22 +156,36 @@ function 쪽3() {
             h('p', null, 실.결과.map(x => `응집도 ${x.응집도}: ${x.횟수}번`).join(' · ')),
             h('p', { class: 'p-note' }, 실.결과.length > 1 ? '출발점에 따라 결과가 달라졌다 → k-평균은 초기 중심점에 민감하다.' : '10번 모두 같은 결과가 나왔다.')) : null))
       : 안함('「군집 분석 › k-평균 시뮬레이터」'),
-    삼차원줄(),
+    삼차원줄(사차원줄()),
   );
 }
 
 /** 3차원 k-평균 카드 — 끝냈을 때 찍어 둔 3차원 그림과 「위에서 / 돌려서」 답 */
-function 삼차원줄() {
+function 삼차원줄(사차원) {
   const d = 기록.get('k평균3d');
   const 답 = 기록.get('k평균3d답', {});
-  if (!d) return h('div', null, h('h3', null, '🧊 3차원 k-평균 (국어·수학·정보)'), 안함('「군집 분석 › 3차원 k-평균」'));
+  // 4차원 줄은 3차원 그림 옆 빈자리에 붙여 쪽을 넘기지 않는다
+  if (!d) return h('div', null, h('h3', null, '🧊 3차원 k-평균 (국어·수학·정보)'), 안함('「군집 분석 › 3차원 k-평균」'), 사차원);
   return h('div', { class: 'p-row' },
     d.사진 ? h('img', { src: d.사진, style: { width: '210px', borderRadius: '8px', border: '1px solid #dfe6ea' } }) : null,
     h('div', { class: 'p-col' },
       h('h3', null, '🧊 3차원 k-평균 (국어·수학·정보, 학생 40명)'),
       h('p', null, `위에서(수학·정보만) 보면 ${답.위 ?? '—'}무리 → 돌려 보면 ${답.돌림 ?? '—'}무리로 보였다.`),
       h('p', null, `k = ${d.k}, 반복 ${d.반복}회, 응집도(SSE) = ${수(d.응집도, 0)}. 국어를 빼고 묶으면 ${d.다름}명이 다르게 묶였다.`),
-      h('p', { class: 'p-note' }, '속성이 셋이면 거리 공식에 항이 하나 더 붙을 뿐 k-평균은 똑같이 돈다. 어떤 속성을 넣느냐가 군집을 바꾼다.')));
+      h('p', { class: 'p-note' }, '속성이 셋이면 거리 공식에 항이 하나 더 붙을 뿐 k-평균은 똑같이 돈다. 어떤 속성을 넣느냐가 군집을 바꾼다.'),
+      사차원));
+}
+
+/** 4차원 평행 좌표 카드 — 군집마다 학생과 내가 적은 특징 (그림 없이 짧게) */
+function 사차원줄() {
+  const d = 기록.get('k평균4d');
+  if (!d) return h('div', null, h('h3', null, '🧵 4차원 군집 — 평행 좌표 그림'), 안함('「군집 분석의 종류 › 4차원 평행 좌표」'));
+  return h('div', null,
+    h('h3', null, `🧵 4차원 군집 — 국어·수학·정보·과학, k = ${d.k} (실루엣 점수 ${수(d.실, 2)})`),
+    h('p', null, d.중심.map((_, g) => {
+      const 학생 = d.이름표.map((v, i) => (v === g ? i + 1 : null)).filter(Boolean).join(',');
+      return `군집 ${g + 1} {${학생}}: ${d.특징[`${d.k},${g}`] || '—'}`;
+    }).join(' / ') + ` (국어·수학 두 과목만으로 묶으면 같은 정도 ${Math.round(d.같음 * 100)}%)`));
 }
 
 function 쪽4() {
@@ -194,7 +208,7 @@ function 쪽4() {
     h('div', { class: 'p-formula', html: 'd = <span class="sqrt">√<span>(a₁ − b₁)² + (a₂ − b₂)²</span></span>' }),
     h('p', null, '두 점 사이의 직선 거리. 속성이 여러 개이면 속성마다 차이를 제곱해 모두 더한 뒤 제곱근을 구한다. (더 나아가기: 맨해튼 거리 = |a₁−b₁| + |a₂−b₂|)'),
     닮 ? h('p', null, `▸ 가장 닮은 친구: ${닮.과목.join('·')} 기준으로 ${닮.학생}번과 가장 가까운 학생은 ${닮.짝}번 (거리 ${수(닮.거리, 2)}). 쓰는 속성을 바꾸면 결과가 달라질 수 있다.`) : null,
-    h('h3', null, '✍️ 스스로 실습: 유사성을 기준으로 군집화하기 (교과서 131쪽)'),
+    h('h3', null, '✍️ 스스로 실습: 유사성을 기준으로 군집화하기'),
     실
       ? h('div', { class: 'p-row' },
         그림(실그림, 300),
@@ -309,7 +323,7 @@ export async function PDF만들기(진행, { 미리보기 = false } = {}) {
       문서.addImage(자료, 'JPEG', 0, 0, 210, 297);
       진행?.(i + 1, 쪽들.length);
     }
-    if (미리보기) return { 그림들, 크기: 문서.output('blob').size };   // 점검용: 파일로 저장하지 않는다
+    if (미리보기) return { 그림들, 크기: 문서.output('blob').size, 넘침: 쪽들.map(p => { const b = p.querySelector('.p-body'); return b.scrollHeight - b.clientHeight; }) };   // 점검용: 파일로 저장하지 않는다
     문서.save('군집분석_학습정리.pdf');
   } finally {
     틀.remove(); 모양.remove();
