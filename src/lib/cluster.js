@@ -150,22 +150,25 @@ export function 실루엣점수(점들, 이름표) {
  *            average(평균·모든 짝의 평균), centroid(중심·두 군집 중심 사이)
  * 돌려주는 값: 묶은 차례 [{가, 나, 새번호, 높이, 구성원}]
  */
+/** 두 군집(구성원 번호 목록) 사이 거리 — 연결 방법에 따라 */
+export function 군집사이거리(점들, A, B, 연결 = 'single') {
+  if (연결 === 'centroid') {
+    const 중 = M => 점들[0].map((_, d) => M.reduce((t, i) => t + 점들[i][d], 0) / M.length);
+    return 거리(중(A), 중(B));
+  }
+  const ds = [];
+  for (const i of A) for (const j of B) ds.push(거리(점들[i], 점들[j]));
+  if (연결 === 'complete') return Math.max(...ds);
+  if (연결 === 'average') return ds.reduce((a, b) => a + b, 0) / ds.length;
+  return Math.min(...ds);
+}
+
 export function 계층군집(점들, 연결 = 'single') {
   const n = 점들.length;
   let 군집 = 점들.map((_, i) => ({ 번호: i, 구성원: [i] }));
   const 차례 = [];
   let 새번호 = n;
-  const 군집거리 = (A, B) => {
-    if (연결 === 'centroid') {
-      const 중 = M => 점들[0].map((_, d) => M.구성원.reduce((t, i) => t + 점들[i][d], 0) / M.구성원.length);
-      return 거리(중(A), 중(B));
-    }
-    const ds = [];
-    for (const i of A.구성원) for (const j of B.구성원) ds.push(거리(점들[i], 점들[j]));
-    if (연결 === 'complete') return Math.max(...ds);
-    if (연결 === 'average') return ds.reduce((a, b) => a + b, 0) / ds.length;
-    return Math.min(...ds);
-  };
+  const 군집거리 = (A, B) => 군집사이거리(점들, A.구성원, B.구성원, 연결);
   while (군집.length > 1) {
     let 최소 = Infinity, 짝 = [0, 1];
     for (let i = 0; i < 군집.length; i++)

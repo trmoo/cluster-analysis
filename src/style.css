@@ -94,6 +94,13 @@ input, textarea, select { font: inherit; }
 .big-num { font-size: 30px; font-weight: 900; color: var(--brand); }
 .muted { color: var(--sub); font-size: 14.5px; }
 .kbd { display: inline-block; border: 1px solid #bbb; border-bottom-width: 3px; border-radius: 5px; padding: 0 5px; font-size: 13px; background: #fff; }
+/* 계층적 군집 — 지금 군집 사이의 거리표 */
+.dist-box { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 8px 10px; font-size: 13px; }
+table.dist { border-collapse: collapse; width: 100%; table-layout: fixed; font-size: 11.5px; letter-spacing: -0.3px; }
+table.dist th, table.dist td { border: 1px solid #e3e7ea; padding: 2px 0; text-align: center; overflow-wrap: anywhere; line-height: 1.15; }
+table.dist th { background: #f4f6f7; font-size: 11px; }
+table.dist td.diag { color: #b8bec3; }
+table.dist td.next { background: #dbe9fb; color: #1d5fb8; font-weight: 900; }
 table.grid { border-collapse: collapse; font-size: 15px; }
 table.grid th, table.grid td { border: 1px solid var(--line); padding: 3px 8px; text-align: center; }
 table.grid th { background: #eef3f1; }

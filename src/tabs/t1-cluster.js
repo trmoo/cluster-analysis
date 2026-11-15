@@ -7,7 +7,7 @@ import { 성적, 과목, 성적점, 예시군집, 종류분류, 삼차원과목,
 import { 삼차원판, 보기들 } from '../lib/three-plot.js';
 import {
   거리, 배정, 중심갱신, 응집도, k평균, 최선k평균, 무작위중심, 난수, 덩어리, 가까운중심,
-  계층군집, 묶음까지, 잎차례, 같은정도,
+  계층군집, 묶음까지, 잎차례, 같은정도, 군집사이거리,
 } from '../lib/cluster.js';
 
 // ───────────────────────── 1. 군집 분석이란? ─────────────────────────
@@ -716,11 +716,41 @@ function 계층(el, 수명, 도구) {
   const n = 성적.length;
   const 왼판칸 = h('div', { class: 'plot-box' });
   const 나무칸 = h('div', { class: 'plot-box' });
+  const 표칸 = h('div', { class: 'dist-box' });
   const 설명칸 = h('div', { class: 'fb' });
   // 단일 연결법이 기본, 나머지 셋은 [심화] — 고른 연결법의 뜻을 덴드로그램 바로 위에 보여 준다
   const 연결풀이 = v => (v === 'single' ? '📏 ' : '📏 <b>[심화]</b> ') + `${연결이름[v]}: 군집 사이 거리 = ${연결설명[v]}`;
   const 연결글 = h('div', { class: 'tip', html: 연결풀이(연결) });
   const 상태 = h('div', { class: 'row' });
+
+  // 지금 남은 군집끼리의 거리표 — 파란 칸이 가장 가까운 두 군집(= 다음에 묶일 짝)
+  function 거리표(점들, 차례, 이름표, 잎) {
+    // 군집을 덴드로그램 잎 차례(왼쪽 → 오른쪽)대로 늘어놓는다
+    const 무리 = [];
+    잎.forEach(i => {
+      let g = 무리.find(x => x.이름 === 이름표[i]);
+      if (!g) 무리.push(g = { 이름: 이름표[i], 구성원: [] });
+      g.구성원.push(i);
+    });
+    const 머리 = g => h('span', { style: { color: 색[g.이름 % 색.length], fontWeight: 800 } }, `{${g.구성원.map(i => i + 1).sort((a, b) => a - b).join(',')}}`);
+    if (무리.length < 2) {
+      채우기(표칸, h('b', null, '지금 군집 사이의 거리'), h('div', { class: 'fb ok' }, '모두 하나의 군집으로 묶였어요. 더 견줄 군집이 없어요.'));
+      return;
+    }
+    // 다음에 묶일 두 군집 = 차례[m] 의 구성원을 정확히 나눠 가진 두 무리
+    const 다음 = 차례[m] ? 무리.filter(g => g.구성원.every(i => 차례[m].구성원.includes(i))) : [];
+    const 칸 = (a, b) => {
+      if (a === b) return h('td', { class: 'diag' }, '·');
+      const 파랑 = 다음.includes(a) && 다음.includes(b);
+      return h('td', { class: 파랑 ? 'next' : '' }, 수(군집사이거리(점들, a.구성원, b.구성원, 연결), 1));
+    };
+    채우기(표칸,
+      h('b', null, '지금 군집 사이의 거리'),
+      h('table', { class: 'dist' },
+        h('tr', null, h('th'), 무리.map(g => h('th', null, 머리(g)))),
+        무리.map(a => h('tr', null, h('th', null, 머리(a)), 무리.map(b => 칸(a, b))))),
+      h('div', { class: 'muted', style: { fontSize: '12px' } }, `파란 칸이 지금 가장 가까운 두 군집(${연결이름[연결]})이에요 → 다음에 묶여요.`));
+  }
 
   function 그리기() {
     const 점들 = 성적점(...축);
@@ -734,22 +764,41 @@ function 계층(el, 수명, 도구) {
       if (구성.length > 1) 판.g.아래.append(군집영역(판, 구성, 색[g % 색.length], 38));
     }
     if (m > 0) {
-      // 방금 묶은 두 군집에서 가장 가까운 두 점을 이어 보여 준다
+      // 방금 묶은 두 군집 사이 거리를 「연결법이 재는 그대로」 점선으로 보여 준다
+      //   단일 = 가장 가까운 두 점 · 완전 = 가장 먼 두 점 · 평균 = 모든 짝(가는 선) · 중심 = 두 군집의 중심
       const c = 차례[m - 1];
       const 가 = 묶음까지(n, 차례, m - 1);
       const A = c.구성원.filter(i => 가[i] === 가[c.구성원[0]]);
       const B = c.구성원.filter(i => !A.includes(i));
-      let 짝 = [A[0], B[0]], 최소 = Infinity;
-      for (const i of A) for (const j of B) { const d = 거리(점들[i], 점들[j]); if (d < 최소) { 최소 = d; 짝 = [i, j]; } }
-      판.g.가운데.append(선(판, 점들[짝[0]], 점들[짝[1]], { 색: '#111', 굵기: 3, 점선: true }));
+      const 굵은점선 = (p, q) => 판.g.가운데.append(선(판, p, q, { 색: '#111', 굵기: 3, 점선: true }));
+      let 무엇 = '';
+      if (연결 === 'average') {
+        for (const i of A) for (const j of B) 판.g.가운데.append(선(판, 점들[i], 점들[j], { 색: '#333', 굵기: 1.2, 점선: true }));
+        무엇 = `점선 ${A.length * B.length}개 = 모든 짝의 거리, 그 평균`;
+      } else if (연결 === 'centroid') {
+        const 중 = M => [0, 1].map(d => M.reduce((t, i) => t + 점들[i][d], 0) / M.length);
+        const [ca, cb] = [중(A), 중(B)];
+        굵은점선(ca, cb);
+        판.g.가운데.append(중심점(판, ...ca, { 크기: 8, fill: '#111' }), 중심점(판, ...cb, { 크기: 8, fill: '#111' }));
+        무엇 = '점선 = 두 군집 중심(◆) 사이';
+      } else {
+        const 먼쪽 = 연결 === 'complete';
+        let 짝 = [A[0], B[0]], 기준 = 먼쪽 ? -Infinity : Infinity;
+        for (const i of A) for (const j of B) {
+          const d = 거리(점들[i], 점들[j]);
+          if (먼쪽 ? d > 기준 : d < 기준) { 기준 = d; 짝 = [i, j]; }
+        }
+        굵은점선(점들[짝[0]], 점들[짝[1]]);
+        무엇 = `점선 = ${먼쪽 ? '가장 먼' : '가장 가까운'} ${짝[0] + 1}번–${짝[1] + 1}번`;
+      }
       설명칸.className = 'fb info';
-      설명칸.innerHTML = `${m}번째 묶음: <b>{${A.map(i => i + 1).join(', ')}}</b> + <b>{${B.map(i => i + 1).join(', ')}}</b> → 하나로 묶었어요. (${연결이름[연결]} 거리 ${수(c.높이, 1)})`;
+      설명칸.innerHTML = `${m}번째 묶음: <b>{${A.map(i => i + 1).join(', ')}}</b> + <b>{${B.map(i => i + 1).join(', ')}}</b> → 하나로 묶었어요. (${연결이름[연결]} 거리 ${수(c.높이, 1)} · ${무엇})`;
     } else { 설명칸.className = 'fb info'; 설명칸.innerHTML = '처음에는 학생 한 명 한 명이 각자 하나의 군집이에요. 「한 번 묶기」를 눌러 보세요.'; }
     점들.forEach((p, i) => 판.g.위.append(점(판, p[0], p[1], { r: 13, fill: 색[이름표[i] % 색.length], 글: i + 1 })));
     채우기(왼판칸, 판.svg);
 
     // 오른쪽 덴드로그램
-    const W = 560, H = 300, 좌 = 46, 아래 = 34;
+    const W = 370, H = 300, 좌 = 36, 아래 = 34;
     const 나무 = s('svg', { viewBox: `0 0 ${W} ${H}`, width: W, height: H, class: 'plot' });
     const 잎 = 잎차례(n, 차례);
     const 최고 = 차례.at(-1).높이 || 1;
@@ -780,6 +829,7 @@ function 계층(el, 수명, 도구) {
       나무.append(s('text', { x: W - 8, y: sy(높이) - 6, 'text-anchor': 'end', fill: '#b36b00', 'font-weight': 800, 'font-size': 13 }, `여기서 자르면 군집 ${n - m}개`));
     }
     채우기(나무칸, 나무);
+    거리표(점들, 차례, 이름표, 잎);
     채우기(상태, h('span', { class: 'badge' }, `묶은 횟수 ${m} / ${n - 1}`), h('span', { class: 'badge' }, `지금 군집 수 ${n - m}개`));
     if (m === n - 1) { 기록.set('계층', { 연결: 연결이름[연결], 축, 높이: 차례.map(c => c.높이) }); 도구.완료(); }
   }
@@ -793,7 +843,7 @@ function 계층(el, 수명, 도구) {
         h('b', null, '축'), 고르기단추([{ 값: '국어,수학', 글: '국어·수학' }, { 값: '수학,과학', 글: '수학·과학' }], 축.join(), v => { 축 = v.split(','); 그리기(); }),
         h('b', null, '연결'), 고르기단추(Object.entries(연결이름).map(([값, 글]) => ({ 값, 글: (값 === 'single' ? '' : '[심화] ') + 글.replace(' 연결법', '') })), 연결, v => { 연결 = v; 그리기(); 연결글.innerHTML = 연결풀이(v); })),
       연결글,
-      나무칸,
+      h('div', { class: 'row', style: { alignItems: 'stretch', gap: '8px' } }, 나무칸, 표칸),
       h('div', { class: 'row' },
         h('button', { class: 'btn primary', onClick: () => { if (m < n - 1) { m++; 그리기(); } } }, '한 번 묶기 ▶'),
         h('button', { class: 'btn', onClick: () => { if (m > 0) { m--; 그리기(); } } }, '◀ 한 번 풀기'),
