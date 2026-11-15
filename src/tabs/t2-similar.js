@@ -250,8 +250,25 @@ function 실습(el, 수명, 도구) {
         판.g.가운데.append(s('text', { x: (판.sx(p[0]) + 판.sx(c[0])) / 2 + 6, y: (판.sy(p[1]) + 판.sy(c[1])) / 2 - 4, fill: 색[g], 'font-weight': 800, 'font-size': 14 }, 수(거리(p, c), 1)));
       });
     }
+    // 평균으로 옮긴 뒤 — 옮기기 전 자리(빈 마름모)와 옮긴 자리(꽉 찬 마름모)를 화살표로 잇는다
+    if (옮김) 처음중심.forEach((c, g) => {
+      const n = 중심[g];
+      const 전 = 중심점(판, c[0], c[1], { fill: '#d32f2f', 빈: true });
+      전.setAttribute('opacity', 0.75);
+      전.append(s('text', { 'text-anchor': 'middle', y: 5, fill: '#d32f2f', 'font-size': 12, 'font-weight': 800 }, g + 1));
+      판.g.가운데.append(전);
+      const x1 = 판.sx(c[0]), y1 = 판.sy(c[1]), x2 = 판.sx(n[0]), y2 = 판.sy(n[1]);
+      const 길이 = Math.hypot(x2 - x1, y2 - y1);
+      if (길이 > 30) {                          // 거의 안 움직였으면 화살표를 그리지 않는다
+        const ux = (x2 - x1) / 길이, uy = (y2 - y1) / 길이;
+        const ax = x1 + ux * 15, ay = y1 + uy * 15, bx = x2 - ux * 17, by = y2 - uy * 17;
+        판.g.가운데.append(
+          s('line', { x1: ax, y1: ay, x2: bx, y2: by, stroke: '#d32f2f', 'stroke-width': 2.5, 'stroke-dasharray': '7 4' }),
+          s('polygon', { points: `${bx + ux * 2},${by + uy * 2} ${bx - ux * 11 - uy * 6},${by - uy * 11 + ux * 6} ${bx - ux * 11 + uy * 6},${by - uy * 11 - ux * 6}`, fill: '#d32f2f' }));
+      }
+    });
     중심.forEach((c, g) => 판.g.맨위.append(중심점(판, c[0], c[1], { fill: '#d32f2f', 글: g + 1 })));
-    채우기(단추칸, 
+    채우기(단추칸,
       지금 < 차례.length
         ? [h('b', null, `${차례[지금]}번 학생은?`), [0, 1, 2].map(g => h('button', {
           class: 'btn', style: { borderColor: 색[g], color: 색[g] }, onClick: () => 고르기(g),
@@ -286,7 +303,14 @@ function 실습(el, 수명, 도구) {
           옮김 = true;
           중심 = 중심갱신(점들, 점들.map((_, i) => 고름[i + 1]), 중심);
           그리기();
-          알림(피드백, `🤔 중심점을 각 군집의 <b>평균 위치</b>로 옮겼어요 → 군집 1 (${중심[0].map(v => 수(v, 1)).join(', ')}), 군집 3 (${중심[2].map(v => 수(v, 1)).join(', ')}). 이렇게 「묶기 → 평균으로 옮기기」를 되풀이하는 것이 바로 <b>k-평균 군집</b>이에요!`, 'info');
+          const 좌표 = c => `(${c.map(v => 수(v, 1)).join(', ')})`;
+          알림(피드백, `🤔 중심점을 각 군집의 <b>평균 위치</b>로 옮겼어요. 그림의 <b>◇ 빈 마름모</b>가 옮기기 전, <b>◆ 꽉 찬 마름모</b>가 옮긴 뒤예요. 이렇게 「묶기 → 평균으로 옮기기」를 되풀이하는 것이 바로 <b>k-평균 군집</b>이에요!`, 'info');
+          끝칸.append(h('table', { class: 'grid' },
+            h('tr', null, ['중심점', '옮기기 전 ◇', '옮긴 뒤 ◆', '움직인 거리'].map(t => h('th', null, t))),
+            처음중심.map((c, g) => h('tr', null,
+              h('td', { style: { color: 색[g], fontWeight: 800 } }, `군집 ${g + 1}`),
+              h('td', null, 좌표(c)), h('td', null, h('b', null, 좌표(중심[g]))),
+              h('td', null, 수(거리(c, 중심[g]), 1))))));
         },
       }, '🤔 중심점을 군집의 평균으로 옮기면?'));
   }
