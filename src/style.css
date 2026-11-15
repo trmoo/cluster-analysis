@@ -146,6 +146,8 @@ svg.plot .pulse circle { animation: pulse 1s infinite alternate; }
 /* ── 단계 목록 ── */
 .steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 5px; }
 .steps li { padding: 6px 10px; border-radius: 10px; background: #f2f4f6; font-size: 15.5px; color: var(--sub); }
+.steps.tight { gap: 3px; }
+.steps.tight li { padding: 3px 10px; }
 .steps li.on { background: #fff1c9; color: var(--ink); font-weight: 800; box-shadow: inset 4px 0 0 var(--warn); }
 .steps li.done { color: #8a96a2; }
 

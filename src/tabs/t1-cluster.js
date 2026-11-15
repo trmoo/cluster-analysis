@@ -399,10 +399,10 @@ function k평균실험(el, 수명, 도구) {
   let 자동 = null, 실험결과 = null;
   const 판 = 좌표판({ w: 540, h: 540, x이름: 데이터 === '성적' ? '국어 →' : 'x →', y이름: '↑ y' });
   const 판칸 = h('div', { class: 'plot-box' }, 판.svg);
-  const 단계목록 = h('ul', { class: 'steps' });
+  const 단계목록 = h('ul', { class: 'steps tight' });
   const 상태 = h('div', { class: 'row' });
   const 피드백 = h('div', { class: 'fb' });
-  const 실험칸 = h('div', { class: 'col' });
+  const 실험칸 = h('div', { class: 'col', style: { gap: '4px' } });
   const 다음단추 = h('button', { class: 'btn primary', onClick: () => 다음() }, '다음 단계 ▶');
   const 자동단추 = h('button', { class: 'btn', onClick: () => 자동켜기() }, '⏵ 자동 재생');
 
@@ -468,13 +468,16 @@ function k평균실험(el, 수명, 도구) {
   function 실험그리기() {
     if (!실험결과) { 채우기(실험칸, ); return; }
     채우기(실험칸, 
-      h('b', null, `출발점만 바꿔 10번 돌린 결과 — ${실험결과.length}가지`),
-      h('div', { class: 'row' }, 실험결과.map((x, i) => h('button', {
-        class: 'btn sm' + (i === 0 ? ' primary' : ''),
+      // 결과가 여러 가지여도 두 줄 안에 들어가게 작은 단추로 (k=6 이면 10가지까지 나온다)
+      h('div', { class: 'row', style: { gap: '4px', flexWrap: 'wrap' } },
+        h('b', { style: { fontSize: '14px' } }, `결과 ${실험결과.length}가지`),
+        h('span', { class: 'muted', style: { fontSize: '13px' } }, '(응집도 · 나온 횟수)'),
+        실험결과.map((x, i) => h('button', {
+        class: 'btn sm' + (i === 0 ? ' primary' : ''), style: { padding: '2px 8px', fontSize: '13.5px' },
         onClick: () => { 멈추기(); 중심 = x.r.중심; 이름표 = x.r.이름표; 지나온 = x.r.기록; 반복 = x.r.반복; 단계 = '끝'; 그리기(); },
-      }, `응집도 ${x.키} · ${x.횟수}번`))),
-      h('div', { class: 'muted' }, 실험결과.length > 1
-        ? '⚠ 출발점에 따라 결과가 달라졌어요! k-평균은 초기 중심점에 민감해요. 그래서 여러 번 돌려 응집도가 가장 작은 결과를 고르기도 해요.'
+      }, `${x.키} · ${x.횟수}번`))),
+      h('div', { class: 'muted', style: { fontSize: '13.5px', lineHeight: 1.35 } }, 실험결과.length > 1
+        ? '⚠ 출발점에 따라 결과가 달라졌어요! k-평균은 초기 중심점에 민감해서, 여러 번 돌려 응집도가 가장 작은 결과를 고르기도 해요.'
         : '이번에는 10번 모두 같은 결과였어요. k 를 바꾸거나 다른 데이터로 다시 해 보세요.'),
     );
   }
@@ -516,8 +519,13 @@ function k평균실험(el, 수명, 도구) {
 
   el.append(
     판칸,
-    h('div', { class: 'col grow' },
-      h('h2', null, 'k-평균(K-Means) 군집 시뮬레이터'),
+    h('div', { class: 'col grow', style: { gap: '6px' } },
+      // 이름 속 뜻을 색으로 — K(빨강) = 군집의 개수 · means(파랑) = 각 군집의 중심(평균)과 데이터의 거리
+      h('h2', { html: '<span style="color:#e53935">K</span>-<span style="color:#1e5bc6">means</span>(평균) 군집 시뮬레이터' }),
+      h('div', { class: 'panel', style: { padding: '5px 12px', fontSize: '15px', lineHeight: 1.45 }, html:
+        '· 주어진 데이터의 속성을 바탕으로 <b>K개의 그룹</b>으로 묶는(clustering) 방법<br>' +
+        '· <b style="color:#e53935">K</b> 는 <b style="color:#e53935">군집의 개수</b>, ' +
+        '<b style="color:#1e5bc6">means</b> 는 <b style="color:#1e5bc6">각 그룹의 중심(평균)과 데이터들 사이의 거리</b>를 뜻해요' }),
       h('div', { class: 'row' },
         고르기단추(Object.entries(데이터들).map(([값, d]) => ({ 값, 글: d.이름 })), 데이터, v => {
           데이터 = v; 점들 = 데이터들[v].만들기(); 실험결과 = null; 실험그리기();
@@ -531,7 +539,7 @@ function k평균실험(el, 수명, 도구) {
         h('button', { class: 'btn', onClick: 무작위 }, '🎲 무작위로 놓기'),
         h('button', { class: 'btn', onClick: 처음부터 }, '↺ 처음부터')),
       상태, 피드백,
-      h('div', { class: 'panel col' },
+      h('div', { class: 'panel col', style: { gap: '4px', padding: '8px 12px' } },
         h('div', { class: 'row' }, h('b', null, '🔬 실험: 출발점이 다르면 결과도 다를까?'),
           h('button', { class: 'btn sm', onClick: 출발점실험 }, '다른 출발점으로 10번')),
         실험칸)),
