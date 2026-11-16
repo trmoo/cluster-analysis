@@ -157,5 +157,65 @@ const 글 = JSON.stringify(D);
 // 난수: 같은 씨앗이면 같은 값
 { const r1 = C.난수(5), r2 = C.난수(5); 확인('난수 재현', r1() === r2() && r1() === r2()); }
 
+// ── 실수로 창을 닫았을 때의 비상 사본(localStorage) ──
+{
+  const 열쇠 = 'cluster-lab:backup:v1';
+  const 가짜 = () => { const m = new Map(); return { getItem: k => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: k => m.delete(k) }; };
+  const 놓기 = (이름, 값) => Object.defineProperty(globalThis, 이름, { value: 값, configurable: true, writable: true });
+  const 로컬 = 가짜();
+  놓기('localStorage', 로컬); 놓기('sessionStorage', 가짜());
+  const S = await import('../src/lib/store.js?판정');
+  const 지금 = Date.parse('2026-11-16T10:00:00Z');
+  const 사본 = (분전, 기록 = { 완료: { 'open/learn': true } }) => ({ 시각: new Date(지금 - 분전 * 60000).toISOString(), 주소: '#open/halli', 기록 });
+  확인('비상: 10분 전 기록은 묻는다', S.비상판정(사본(10), 지금) === 'ask');
+  확인('비상: 2시간 59분 전도 묻는다', S.비상판정(사본(179), 지금) === 'ask');
+  확인('비상: 3시간 넘으면 지운다(다음 반에 넘기지 않음)', S.비상판정(사본(181), 지금) === 'expired');
+  확인('비상: 유효 시간은 3시간', S.비상유효시간 === 3 * 60 * 60 * 1000);
+  확인('비상: 빈 기록은 묻지 않는다', S.비상판정(사본(5, {}), 지금) === 'none');
+  확인('비상: 사본 없음', S.비상판정(null, 지금) === 'none');
+  확인('비상: 깨진 시각은 묻지 않는다', S.비상판정({ 시각: 'x', 기록: { a: 1 } }, 지금) === 'none');
+  확인('비상: 시계가 미래면 믿지 않는다', S.비상판정(사본(-30), 지금) === 'expired');
+
+  // 탭 하나에서 활동하면 사본이 생긴다
+  const A = await import('../src/lib/store.js?탭1');
+  A.기록.위치('#similar/euclid');
+  A.기록.완료('open/learn');
+  const 남은 = JSON.parse(로컬.getItem(열쇠) || 'null');
+  확인('비상: 활동하면 localStorage 에 사본', 남은?.기록?.완료?.['open/learn'] === true && 남은.주소 === '#similar/euclid');
+  확인('비상: 사본은 시각·주소·기록뿐(이름·학번 없음)', 남은 && Object.keys(남은).sort().join() === '기록,시각,주소');
+
+  // 창을 닫았다 다시 연다 = sessionStorage 는 비고 localStorage 만 남는다
+  놓기('sessionStorage', 가짜());
+  const B = await import('../src/lib/store.js?탭2');
+  확인('비상: 새 탭은 저절로 불러오지 않는다', !B.기록.완료됨('open/learn'));
+  확인('비상: 새 탭은 남은 사본을 알려 준다', B.기록.남은사본()?.주소 === '#similar/euclid');
+  B.기록.set('아무거나', 1);
+  확인('비상: 답하기 전에는 사본을 덮어쓰지 않는다', JSON.parse(로컬.getItem(열쇠)).기록.완료?.['open/learn'] === true);
+  B.기록.불러오기(B.기록.남은사본().기록);
+  확인('비상: 이어서 하기로 되살아난다', B.기록.완료됨('open/learn') && B.기록.남은사본() === null);
+  B.기록.비상지우기();
+  B.기록.완료('wrap/quiz');
+  확인('비상: PDF 를 받은 뒤에는 사본을 지우고 다시 만들지 않는다', 로컬.getItem(열쇠) === null && B.기록.완료됨('wrap/quiz'));
+  B.기록.지우기(); B.기록.완료('open/halli');
+  확인('비상: 기록 지우기 뒤 새로 하면 다시 사본을 만든다', !!로컬.getItem(열쇠));
+  B.기록.지우기();
+  확인('비상: 기록 지우기는 사본도 지운다', 로컬.getItem(열쇠) === null);
+
+  // 다음 학생이 「처음부터 새로」
+  A.기록.완료('open/halli');
+  놓기('sessionStorage', 가짜());
+  const C3 = await import('../src/lib/store.js?탭3');
+  확인('비상: 다음 탭이 사본을 본다', !!C3.기록.남은사본());
+  C3.기록.사본버리기();
+  확인('비상: 처음부터 새로 — 사본을 버리고 앞 학생 기록이 안 보인다',
+    C3.기록.남은사본() === null && 로컬.getItem(열쇠) === null && !C3.기록.완료됨('open/halli'));
+
+  // 3시간 지난 사본은 열 때 묻지 않고 지운다
+  로컬.setItem(열쇠, JSON.stringify({ ...사본(0), 시각: new Date(Date.now() - 5 * 3600000).toISOString() }));
+  놓기('sessionStorage', 가짜());
+  const D4 = await import('../src/lib/store.js?탭4');
+  확인('비상: 오래된 사본은 열 때 지운다', D4.기록.남은사본() === null && 로컬.getItem(열쇠) === null);
+}
+
 console.log(`\n시험 ${통과 + 실패}가지 중 ${통과} 통과` + (실패 ? `, ${실패} 실패` : ' ✔'));
 process.exit(실패 ? 1 : 0);

@@ -63,7 +63,8 @@ export function 화면수명() {
 }
 
 /** 앱 안의 대화상자 (브라우저 기본 alert 대신) */
-export function 대화상자(제목, 내용, 단추 = [{ 글: '닫기' }]) {
+/** 꼭고르기: 바깥을 눌러 닫지 못하게 — 단추 하나를 반드시 골라야 하는 물음 */
+export function 대화상자(제목, 내용, 단추 = [{ 글: '닫기' }], { 꼭고르기 = false } = {}) {
   const 배경 = h('div', { class: 'modal-bg' });
   const 닫기 = () => 배경.remove();
   const 상자 = h('div', { class: 'modal' },
@@ -75,7 +76,7 @@ export function 대화상자(제목, 내용, 단추 = [{ 글: '닫기' }]) {
     }, b.글))),
   );
   배경.append(상자);
-  배경.addEventListener('click', e => { if (e.target === 배경) 닫기(); });
+  if (!꼭고르기) 배경.addEventListener('click', e => { if (e.target === 배경) 닫기(); });
   document.getElementById('stage').append(배경);
   return 닫기;
 }

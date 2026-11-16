@@ -4,7 +4,7 @@
 // 탭(대단원) → 카드(화면 하나 = 활동 하나) 차례로 넘긴다.
 import './style.css';
 import { h, 화면수명, 대화상자 } from './lib/ui.js';
-import { 이어하기저장, 이어하기확인 } from './lib/resume.js';
+import { 이어하기저장, 시작확인 } from './lib/resume.js';
 import { 기록 } from './lib/store.js';
 import 탭0 from './tabs/t0-open.js';
 import 탭1, { 종류탭 } from './tabs/t1-cluster.js';
@@ -38,11 +38,11 @@ const 뒤단추 = h('button', { class: 'nav-btn', title: '다음 (→)', onClick
 // 수업이 도중에 끝나면 → 이어하기 파일, 다 했으면 → 전체 활동 PDF (어느 화면에서나 누를 수 있게 카드 줄 오른쪽에 둔다)
 const 이어단추 = h('button', { class: 'btn sm sub-act', title: '지금까지 한 활동을 HTML 파일로 내려받아요', onClick: () => 이어하기저장(location.hash) }, '💾 다음 시간에 이어하기');
 const 완료단추 = h('button', { class: 'btn sm primary sub-act', title: '전체 활동 과정을 PDF 로 내려받아요', onClick: () => 완료하기() }, '🏁 군집 분석 실험실 완료');
-// 다른 반 수업 전에 — 이 창(sessionStorage)에 남은 활동 기록을 모두 지우고 처음 화면으로
+// 다른 반 수업·다음 학생 전에 — 이 창과 이 브라우저(비상 사본)에 남은 활동 기록을 모두 지우고 처음 화면으로
 const 지우기단추 = h('button', {
-  class: 'foot-clear', title: '이 창에 남은 활동 기록을 모두 지워요 (다른 반 수업 전에)',
+  class: 'foot-clear', title: '이 컴퓨터에 남은 활동 기록을 모두 지워요 (다른 반 수업 전에)',
   onClick: () => 대화상자('🧹 활동 기록을 모두 지울까요?',
-    '이 창에 남은 활동 기록(군집화 그림·실습 답·확인 문제·완료 표시)이 모두 지워지고 처음 화면으로 돌아가요. 다른 반 수업이나 다음 학생이 쓰기 전에 누르세요. 되돌릴 수 없어요.', [
+    '이 컴퓨터에 남은 활동 기록(군집화 그림·실습 답·확인 문제·완료 표시)이 모두 지워지고 처음 화면으로 돌아가요. 다른 반 수업이나 다음 학생이 쓰기 전에 누르세요. 되돌릴 수 없어요.', [
       { 글: '그만두기' },
       { 글: '모두 지우기', 주: true, 할일: () => { 기록.지우기(); location.hash = '#open/learn'; location.reload(); } }]),
 }, '🧹 내 기록 모두 지우기');
@@ -96,6 +96,7 @@ function 가기(탭, 카드) {
   지금 = { 탭, 카드 };
   const 주소 = `#${탭들[탭].id}/${탭들[탭].카드[카드].id}`;
   if (location.hash !== 주소) history.replaceState(null, '', 주소);
+  기록.위치(주소);
   그리기();
 }
 function 넘기기(방향) {
@@ -118,7 +119,7 @@ addEventListener('keydown', e => {
   if (e.key === 'ArrowRight') 넘기기(1);
   if (e.key === 'ArrowLeft') 넘기기(-1);
 });
-addEventListener('hashchange', () => { 주소읽기(); 그리기(); });
+addEventListener('hashchange', () => { 주소읽기(); 기록.위치(location.hash); 그리기(); });
 
 /** 「군집 분석 실험실 완료」 — 덜 한 활동이 있으면 알려 주고, 전체 활동 과정을 PDF 로 내려받는다 */
 function 완료하기() {
@@ -129,8 +130,8 @@ function 완료하기() {
     try {
       const { PDF만들기 } = await import('./pdf.js');
       await PDF만들기((지금쪽, 전체쪽) => { 완료단추.textContent = `⏳ PDF 만드는 중… ${지금쪽}/${전체쪽}`; });
-      기록.완료('wrap/pdf'); 카드줄그리기();
-      대화상자('🎉 군집 분석 실험실 완료!', h('div', { html: '「군집분석_학습정리.pdf」 를 내려받았어요(A4 6쪽, 내가 한 활동이 모두 담겨 있어요).<br>브라우저의 <b>내려받기 폴더</b>를 확인하세요.' }));
+      기록.완료('wrap/pdf'); 기록.비상지우기(); 카드줄그리기();
+      대화상자('🎉 군집 분석 실험실 완료!', h('div', { html: '「군집분석_학습정리.pdf」 를 내려받았어요(A4 6쪽, 내가 한 활동이 모두 담겨 있어요).<br>브라우저의 <b>내려받기 폴더</b>를 확인하세요.<br><span class="muted">다음 학생을 위해 이 컴퓨터에 남겨 둔 비상 기록은 지웠어요(이 창을 닫기 전까지는 그대로 볼 수 있어요).</span>' }));
     } catch (e) {
       console.error(e);
       대화상자('😢 PDF 를 만들지 못했어요', e.message);
@@ -146,6 +147,7 @@ function 완료하기() {
 
 맞추기();
 주소읽기();
+기록.위치(location.hash);
 그리기();
-// 「다음 시간에 이어하기」 로 받은 파일을 열었으면 지난 기록을 불러올지 묻는다
-이어하기확인(주소 => { location.hash = 주소 || location.hash; 주소읽기(); 그리기(); });
+// 실수로 창을 닫았다 다시 열었거나 「다음 시간에 이어하기」 파일을 열었으면 지난 기록을 불러올지 묻는다
+시작확인(주소 => { location.hash = 주소 || location.hash; 주소읽기(); 그리기(); });
