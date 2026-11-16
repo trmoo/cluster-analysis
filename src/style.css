@@ -219,3 +219,58 @@ input.fill.bad { color: var(--bad); border-color: var(--bad); background: #fde8e
 /* 카드 줄 오른쪽 — 「다음 시간에 이어하기」·「군집 분석 실험실 완료」 */
 .sub-acts { display: flex; gap: 6px; flex: none; }
 .sub-act { font-size: 14px; padding: 6px 11px; white-space: nowrap; }
+
+/* ══ 휴대폰 세로 화면 (main.js 의 맞추기() 가 html 에 .phone 을 붙인다) ══
+   1280×720 무대를 줄이지 않고 화면 너비 그대로 쓴다. 카드 안의 칸은 위아래로 쌓고, 페이지를 세로로 스크롤한다.
+   그래프(SVG·3차원 판)는 화면 너비에 맞춰 비율대로 줄어든다(점 끌기는 getScreenCTM 으로 재므로 그대로 된다). */
+/* body 는 스크롤 상자가 되면 안 된다 — 그러면 카드 줄의 sticky 가 붙지 않는다(스크롤은 html 이 한다) */
+html.phone { height: auto; overflow-x: hidden; overflow-y: auto; }
+html.phone body { height: auto; overflow: visible; }
+html.phone #stage { position: relative; width: 100%; min-height: 100vh; min-height: 100dvh; height: auto; overflow: visible; font-size: 16px; }
+html.phone .top { height: auto; flex-wrap: wrap; gap: 6px; padding: 8px 10px 6px; }
+html.phone .brand { font-size: 19px; }
+html.phone .tabs { margin-left: 0; width: 100%; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+html.phone .tabs::-webkit-scrollbar, html.phone .cards::-webkit-scrollbar { display: none; }
+html.phone .tab { flex: none; font-size: 15px; padding: 7px 11px; }
+/* 카드 줄은 화면 위에 붙어 있어 어디까지 내려가도 ◀ ▶ 로 넘길 수 있다 */
+html.phone .subbar { position: sticky; top: 0; z-index: 20; height: auto; padding: 6px 8px; gap: 6px; box-shadow: 0 2px 6px rgba(0,0,0,.08); }
+html.phone .cards { justify-content: flex-start; overflow-x: auto; scrollbar-width: none; flex: 1 1 0; min-width: 0; }
+html.phone .pill { font-size: 14.5px; padding: 4px 12px; }
+html.phone .nav-btn { flex: none; }
+html.phone .sub-acts { padding: 4px 10px 16px; gap: 8px; }  /* 휴대폰에서는 main.js 가 카드 아래로 옮긴다 */
+html.phone .sub-act { flex: 1; font-size: 14px; padding: 9px 6px; white-space: normal; }
+html.phone .area { flex: none; }
+html.phone .seg { display: flex; flex-wrap: wrap !important; }  /* 단계 막대처럼 nowrap 을 박아 둔 것도 접는다 */
+html.phone .seg-b { flex: 1 1 auto; }
+html.phone .card { position: relative; inset: auto; flex-direction: column; padding: 12px 10px 18px; gap: 12px; }
+html.phone .card * { max-width: 100%; }
+html.phone .card h2 { font-size: 21px; }
+/* 고정 너비로 짠 칸이 화면보다 넓으면 줄이고, 한 줄에 나란히 놓인 칸은 위아래로 */
+html.phone .card [style*="width"]:not(input):not(i):not(span) { min-width: 0; }
+html.phone .col, html.phone .panel, html.phone .plot-box { width: auto !important; flex: none !important; min-width: 0; }
+html.phone .card > * { width: 100%; }
+html.phone svg.plot { width: 100%; height: auto; }
+html.phone .plot-box { align-self: stretch; }
+html.phone canvas { max-width: 100%; height: auto !important; }
+html.phone .hg-grid { grid-template-columns: repeat(4, 1fr); }
+html.phone .opts, html.phone .progress-list { grid-template-columns: 1fr; }
+html.phone .opt { font-size: 16px; padding: 10px 12px; }
+/* 뒤집는 카드: 휴대폰에서는 위아래로 쌓고, 3차원으로 뒤집는 대신 보이는 면만 바꾼다(높이를 내용에 맞추려고) */
+html.phone .row:has(> .flip) { flex-direction: column; flex-wrap: nowrap !important; max-height: none !important; min-height: 0 !important; }
+html.phone .flip { flex: none; }
+html.phone .flip-in { height: auto; transform: none !important; transition: none; }
+html.phone .flip-face { position: relative; inset: auto; transform: none; backface-visibility: visible; }
+html.phone .flip:not(.on) .flip-back, html.phone .flip.on .flip-face:not(.flip-back) { display: none; }
+html.phone .bucket { min-height: 90px; }
+html.phone .scard { max-width: 100%; }
+html.phone .formula { font-size: 17px; overflow-x: auto; }
+html.phone table.grid { font-size: 13px; }
+html.phone table.grid th, html.phone table.grid td { padding: 3px 4px; }
+html.phone .foot { height: auto; flex-direction: column; gap: 6px; padding: 10px; text-align: center; }
+html.phone .modal-bg { position: fixed; padding: 12px; }
+html.phone .modal { width: 100%; max-height: 85vh; padding: 16px; }
+/* 그래프가 왼쪽·설명이 오른쪽인 카드 — 위아래로 쌓으면 그래프가 제목보다 먼저 나온다.
+   설명 칸을 풀어(display: contents) 제목과 첫 안내 문장만 그래프 위로 끌어올린다. 나머지 단추·피드백은 그래프 아래에 그대로. */
+html.phone .card > :first-child:not(:has(h2)) ~ .col:has(h2) { display: contents; }
+html.phone .card > :first-child:not(:has(h2)) ~ .col > :is(h2, .row:has(> h2)) { order: -2; }
+html.phone .card > :first-child:not(:has(h2)) ~ .col > :is(h2, .row:has(> h2)) + :is(p, .lead) { order: -1; }

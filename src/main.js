@@ -19,7 +19,21 @@ const 무대 = document.getElementById('stage');
 // 창이 16:9 보다 세로로 길면(화면 분할 등) 너비에 맞추고 무대 높이를 늘려 위아래 검은 띠를 없앤다.
 // 카드가 flex 로 짜여 있어 늘어난 높이는 여유 자리가 된다. 아주 긴 창은 1200 에서 멈춘다(그 밖은 띠).
 const 최대높이 = 1200;
+// 휴대폰 세로 화면: 1280 무대를 줄이면 글씨가 콩알만 해진다(390px 폰에서 30%).
+// 그래서 무대를 줄이지 않고 화면 너비 그대로 두어, 카드 안의 칸들을 위아래로 쌓고 페이지를 세로로 스크롤한다(style.css 의 html.phone).
+// ⚠ innerWidth 가 아니라 clientWidth 로 잰다 — 1280 무대가 깔려 있으면 휴대폰 브라우저가 페이지를 축소해 보여 줘서
+//   innerWidth 가 1280 으로 나온다(그러면 폰인 줄 모른다). clientWidth 는 기기 너비(예: 390)를 그대로 준다.
+const 폰인가 = () => { const { clientWidth: w, clientHeight: hh } = document.documentElement; return w < hh && w <= 820; };
 function 맞추기() {
+  const 폰 = 폰인가();
+  document.documentElement.classList.toggle('phone', 폰);
+  // 휴대폰에서는 위에 붙은 카드 줄을 얇게 두려고 「이어하기·완료」 단추를 카드 아래(꼬리말 위)로 옮긴다
+  if (폰 && 할일줄.parentElement?.classList.contains('subbar')) 무대.querySelector('.foot')?.before(할일줄);
+  if (!폰 && 할일줄.parentElement && !할일줄.parentElement.classList.contains('subbar')) 뒤단추.before(할일줄);
+  if (폰) {
+    무대.style.height = ''; 무대.style.transform = ''; 무대.style.left = ''; 무대.style.top = '';
+    return;
+  }
   const 배율 = Math.min(innerWidth / 1280, innerHeight / 720);
   const 높이 = Math.min(최대높이, Math.max(720, innerHeight / 배율));
   무대.style.height = 높이 + 'px';
@@ -46,11 +60,12 @@ const 지우기단추 = h('button', {
       { 글: '그만두기' },
       { 글: '모두 지우기', 주: true, 할일: () => { 기록.지우기(); location.hash = '#open/learn'; location.reload(); } }]),
 }, '🧹 내 기록 모두 지우기');
+const 할일줄 = h('div', { class: 'sub-acts' }, 이어단추, 완료단추);
 무대.append(
   h('header', { class: 'top' },
     h('div', { class: 'brand' }, h('span', { class: 'dots' }, h('i'), h('i'), h('i')), '군집 분석 실험실'),
     탭줄),
-  h('div', { class: 'subbar' }, 앞단추, 카드줄, h('div', { class: 'sub-acts' }, 이어단추, 완료단추), 뒤단추),
+  h('div', { class: 'subbar' }, 앞단추, 카드줄, 할일줄, 뒤단추),
   본문,
   h('footer', { class: 'foot' },
     h('span', null, '「데이터 과학」 Ⅲ. 군집 분석 모델의 개념 · ← → 키로 넘기기'),
@@ -72,6 +87,16 @@ function 그리기() {
     class: 'pill' + (i === 지금.카드 ? ' on' : '') + (기록.완료됨(`${탭.id}/${c.id}`) ? ' done' : ''),
     onClick: () => 가기(지금.탭, i),
   }, `${i + 1}. ${c.제목}`)));
+  // 휴대폰에서는 탭·카드 줄이 옆으로 밀리므로 지금 고른 것이 보이게 끌어 온다
+  requestAnimationFrame(() => {
+    if (!document.documentElement.classList.contains('phone')) return;
+    for (const el of [탭줄.querySelector('.tab.on'), 카드줄.querySelector('.pill.on')]) {
+      if (!el) continue;
+      const 줄 = el.parentElement, 칸 = el.getBoundingClientRect(), 판 = 줄.getBoundingClientRect();
+      줄.scrollLeft += (칸.left + 칸.width / 2) - (판.left + 판.width / 2);
+    }
+    scrollTo(0, 0);
+  });
   앞단추.disabled = 지금.탭 === 0 && 지금.카드 === 0;
   뒤단추.disabled = 지금.탭 === 탭들.length - 1 && 지금.카드 === 탭.카드.length - 1;
   // 카드 본문 — 앞 화면의 타이머·이벤트를 먼저 걷어 낸다
